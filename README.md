@@ -19,7 +19,7 @@ This is not a framework. There are no settings files and no option matrix — yo
 ## Install
 
 ```sh
-git clone https://github.com/OWNER/zshconf ~/.local/share/zshconf
+git clone https://github.com/furkanural/zshconf ~/.local/share/zshconf
 cd ~/.local/share/zshconf
 ./install.sh        # read it first — it's short
 exec zsh
