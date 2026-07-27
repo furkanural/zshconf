@@ -26,3 +26,5 @@ just test-bare   # bare-Linux cell in Docker; run it if you touched guards
 ```
 
 CI runs the suite on ubuntu/macos × bare/full. If you add behavior, add an assertion; if you fix a bug, add the assertion that would have caught it.
+
+Optional: `just install-hooks` symlinks `hooks/pre-commit` — a fast staged-files-only check (zsh syntax, filename hygiene, file size, leaked secrets). It runs no tests; the suite stays your job before pushing.

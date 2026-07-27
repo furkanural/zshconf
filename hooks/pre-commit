@@ -1,0 +1,51 @@
+#!/bin/sh
+# pre-commit: staged-file checks only — syntax, filenames, big files, secrets.
+# Opt in with: just install-hooks   (symlinks this into .git/hooks/)
+set -u
+
+fail=0
+max_kb=500
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+# ── 1. Syntax: every staged zsh file must parse
+for f in $staged; do
+  [ -f "$f" ] || continue
+  case "$f" in
+    *.zsh|install.sh|functions/*)
+      if ! out=$(zsh -n "$f" 2>&1); then
+        echo "FAIL: $f does not parse:"
+        echo "$out" | sed 's/^/    /'
+        fail=1
+      fi
+      ;;
+  esac
+done
+
+# ── 2. Filenames: no whitespace, no non-ASCII, no case-only collisions
+echo "$staged" | grep -E ' |	' && { echo "FAIL: whitespace in filename(s) above"; fail=1; }
+echo "$staged" | LC_ALL=C grep '[^ -~]' && { echo "FAIL: non-ASCII filename(s) above"; fail=1; }
+dupes=$(echo "$staged" | tr 'A-Z' 'a-z' | sort | uniq -d)
+[ -n "$dupes" ] && { echo "FAIL: case-only filename collision: $dupes"; fail=1; }
+
+# ── 3. Big files: nothing staged over 500KB
+for f in $staged; do
+  [ -f "$f" ] || continue
+  kb=$(( $(wc -c < "$f") / 1024 ))
+  [ "$kb" -gt "$max_kb" ] && { echo "FAIL: $f is ${kb}KB (limit ${max_kb}KB)"; fail=1; }
+done
+
+# ── 4. Secrets: private keys + hardcoded credential patterns
+for f in $staged; do
+  [ -f "$f" ] || continue
+  if grep -qE 'BEGIN (RSA |EC |OPENSSH |DSA )?PRIVATE KEY' "$f"; then
+    echo "FAIL: $f contains a private key"
+    fail=1
+  elif grep -qiE '[A-Za-z_]*(api[_-]?key|secret|token|password)[A-Za-z_]*[[:space:]]*[:=][[:space:]]*["'"'"']?[A-Za-z0-9/+_.=-]{16,}' "$f"; then
+    echo "FAIL: $f may contain a hardcoded credential"
+    fail=1
+  fi
+done
+
+exit "$fail"
