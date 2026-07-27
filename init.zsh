@@ -40,6 +40,8 @@ source "$ZSHCONF/modules/tools/docker.zsh"
 source "$ZSHCONF/modules/tools/bat.zsh"
 source "$ZSHCONF/modules/tools/fd.zsh"
 source "$ZSHCONF/modules/tools/ripgrep.zsh"
+source "$ZSHCONF/modules/tools/heroku.zsh"      # guarded; no-op without the heroku CLI
+source "$ZSHCONF/modules/tools/modelpreset.zsh" # Claude Code endpoint/model preset switcher
 
 # ── Aliases by domain
 source "$ZSHCONF/modules/aliases/general.zsh"
