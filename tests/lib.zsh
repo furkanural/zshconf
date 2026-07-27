@@ -1,4 +1,11 @@
 # Shared test helpers. Test files source this, use t_* asserts, end with t_done.
+
+# Ubuntu's /etc/zsh/zshrc runs a bare `compinit` before ~/.zshrc; on hosts
+# with group/world-writable fpath dirs (e.g. GitHub runners) it aborts
+# non-interactively and pollutes stderr, failing the stderr-empty asserts.
+# The config owns completion setup (Tier 1 zicompinit) — skip the global one.
+export skip_global_compinit=1
+
 REPO="${${(%):-%N}:A:h:h}"
 TWORK="$(mktemp -d)"
 trap 'rm -rf "$TWORK"' EXIT
