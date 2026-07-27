@@ -56,10 +56,5 @@ jobs:
       - name: Warm up (clone zinit + plugins, build compdump)
         run: |
           { for i in $(seq 1 50); do echo 'sleep 0.3'; done; echo exit; } | zsh -i >/dev/null 2>&1 || true
-      - name: zsh-bench
-        run: |
-          git clone --depth=1 https://github.com/romkatv/zsh-bench ~/zsh-bench
-          echo '## zsh-bench' >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          ~/zsh-bench/zsh-bench | tee -a "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - name: Startup benchmark
+        run: zsh .github/bench.zsh | tee -a "$GITHUB_STEP_SUMMARY"
