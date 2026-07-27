@@ -1,0 +1,13 @@
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: wednesday
+    labels:
+      - ":robot: dependabot"
+      - ":octocat: github-actions"
+      - ":heavy_plus_sign: dependencies"
+    open-pull-requests-limit: 10
