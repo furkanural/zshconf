@@ -22,6 +22,15 @@ t_match() {  # t_match <desc> <haystack> <glob-pattern>
   fi
 }
 
+t_nomatch() {  # t_nomatch <desc> <haystack> <glob-pattern>
+  if [[ "$2" != ${~3} ]]; then
+    print -r -- "  ok: $1"
+  else
+    print -r -- "  FAIL: $1 — '$2' unexpectedly matches '$3'"
+    T_FAIL=1
+  fi
+}
+
 t_done() { exit $T_FAIL }
 
 # t_make_zdot <dir>: fixture ZDOTDIR whose .zshrc is the installer's stub.

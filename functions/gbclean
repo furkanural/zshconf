@@ -1,4 +1,5 @@
-# Delete local branches merged into HEAD. Skips main/master/develop + current.
+# Delete local branches merged into HEAD. Skips main/master/develop, the
+# current branch (*), and branches checked out in other worktrees (+).
 # (Most day-to-day git aliases — gst, gco, gp — come from OMZP::git.)
 local force=0
 
@@ -24,7 +25,7 @@ local -a merged_flag
 
 local branches
 branches=$(git branch $merged_flag \
-    | grep -Ev '^\*|^[[:space:]]+(main|master|develop)$')
+    | grep -Ev '^[*+]|^[[:space:]]+(main|master|develop)$')
 
 [[ -z "$branches" ]] && {
   echo "No branches to delete."

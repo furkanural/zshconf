@@ -25,6 +25,18 @@ git checkout -qb current-branch
 gbclean >/dev/null 2>&1
 t_eq "current branch survives" "$(git branch --show-current)" "current-branch"
 
+# Branches checked out in another worktree (marked '+') must be skipped —
+# git would refuse anyway, but gbclean shouldn't even attempt them.
+git branch wt-branch
+git worktree add -q "$TWORK/wt" wt-branch
+out=$(gbclean 2>&1)
+t_eq      "worktree branch survives"      "$(git branch --list wt-branch --format='%(refname:short)')" "wt-branch"
+t_nomatch "worktree branch not attempted" "$out" "*cannot delete*"
+out=$(gbclean --force 2>&1)
+t_eq      "worktree branch survives --force" "$(git branch --list wt-branch --format='%(refname:short)')" "wt-branch"
+t_nomatch "not attempted under --force"      "$out" "*cannot delete*"
+git worktree remove "$TWORK/wt"
+
 git checkout -q main
 gbclean --force >/dev/null 2>&1
 t_eq "--force deletes unmerged too" "$(git branch --format='%(refname:short)' | tr '\n' ' ')" "main "
