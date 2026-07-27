@@ -30,7 +30,7 @@ jobs:
         run: brew bundle
 
       - name: Cache zinit + plugins
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.local/share/zinit
           key: zinit-${{ runner.os }}-${{ matrix.tools }}-${{ hashFiles('modules/plugins.zsh') }}
