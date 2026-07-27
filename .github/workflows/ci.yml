@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / ${{ matrix.tools }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        tools: [bare, full]   # bare exercises every $+commands degradation guard
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install zsh (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -q && sudo apt-get install -y -q zsh
+
+      - name: Set up Homebrew (full)
+        if: matrix.tools == 'full'
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Install optional tools (full)
+        if: matrix.tools == 'full'
+        run: brew bundle
+
+      - name: Cache zinit + plugins
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/zinit
+          key: zinit-${{ runner.os }}-${{ hashFiles('modules/plugins.zsh') }}
+
+      - name: Run tests
+        run: zsh tests/run.zsh
+
+  bench:
+    name: startup benchmark (report only, never gates)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -q && sudo apt-get install -y -q zsh
+      - name: Install config into runner HOME
+        run: ./install.sh
+      - name: Warm up (clone zinit + plugins, build compdump)
+        run: |
+          { for i in $(seq 1 50); do echo 'sleep 0.3'; done; echo exit; } | zsh -i >/dev/null 2>&1 || true
+      - name: zsh-bench
+        run: |
+          git clone --depth=1 https://github.com/romkatv/zsh-bench ~/zsh-bench
+          echo '## zsh-bench' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          ~/zsh-bench/zsh-bench | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
