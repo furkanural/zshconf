@@ -46,6 +46,12 @@ source "$ZSHCONF/modules/aliases/general.zsh"
 source "$ZSHCONF/modules/aliases/homebrew.zsh"
 source "$ZSHCONF/modules/aliases/system.zsh"
 
+# ── OS-specific leaf modules (the ONLY $OSTYPE dispatch in the project)
+case "$OSTYPE" in
+  darwin*) source "$ZSHCONF/modules/os/darwin.zsh" ;;
+  linux*)  source "$ZSHCONF/modules/os/linux.zsh" ;;
+esac
+
 # ── Autoloaded user functions: one file per function in functions/
 fpath=("$ZSHCONF/functions" $fpath)
 () {

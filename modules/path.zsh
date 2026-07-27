@@ -1,10 +1,12 @@
-# ── PATH  (brew AS → brew Intel → system → user-local; (N) skips missing dirs)
+# ── PATH  (brew AS → brew Intel → brew Linux → system → user-local; (N) skips missing dirs)
 path=(
   /opt/homebrew/bin(N)
   /opt/homebrew/sbin(N)
   /opt/homebrew/opt/curl/bin(N)
   /usr/local/bin(N)
   /usr/local/sbin(N)
+  /home/linuxbrew/.linuxbrew/bin(N)
+  /home/linuxbrew/.linuxbrew/sbin(N)
   /usr/bin
   /bin
   /usr/sbin

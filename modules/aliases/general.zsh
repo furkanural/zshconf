@@ -2,7 +2,6 @@
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
-alias f='open -a Finder ./'
 alias q='exit'
 alias reload='exec zsh'
 
