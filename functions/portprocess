@@ -1,0 +1,3 @@
+# Process holding <port>.
+[[ -n "$1" ]] || { _usage "portprocess <port_number>"; return; }
+lsof -i :"$1"

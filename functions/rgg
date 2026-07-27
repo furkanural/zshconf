@@ -1,0 +1,4 @@
+# ripgrep with hidden files, .git skipped.
+[[ -n "$1" ]] || { _usage "rgg <pattern> [path]"; return; }
+_need rg || return
+rg --hidden --glob '!.git' --smart-case --line-number "$@"

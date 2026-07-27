@@ -1,0 +1,3 @@
+# cd into a dir and list it.
+[[ -n "$1" ]] || { _usage "cdl <dir>"; return; }
+cd "$1" && ls

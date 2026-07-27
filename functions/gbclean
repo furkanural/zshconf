@@ -1,0 +1,34 @@
+# Delete local branches merged into HEAD. Skips main/master/develop + current.
+# (Most day-to-day git aliases — gst, gco, gp — come from OMZP::git.)
+local force=0
+
+case "$1" in
+  -f|--force)
+    force=1
+    shift
+    ;;
+  -h|--help)
+    echo "Usage: gbclean [-f|--force]"
+    echo "  gbclean          Delete branches merged into HEAD"
+    echo "  gbclean --force  Force-delete local branches, even if unmerged"
+    return 0
+    ;;
+esac
+
+local delete_flag="-d"
+(( force )) && delete_flag="-D"
+
+# Force mode lists all local branches; default lists only merged ones.
+local -a merged_flag
+(( force )) || merged_flag=(--merged)
+
+local branches
+branches=$(git branch $merged_flag \
+    | grep -Ev '^\*|^[[:space:]]+(main|master|develop)$')
+
+[[ -z "$branches" ]] && {
+  echo "No branches to delete."
+  return 0
+}
+
+xargs -n 1 git branch "$delete_flag" <<< "$branches"

@@ -1,0 +1,4 @@
+# Open repo/path/issue/PR/branch in the browser.
+#   ghopen · ghopen README.md · ghopen 1234 · ghopen -b feat-x
+_need gh || return
+gh browse "$@"

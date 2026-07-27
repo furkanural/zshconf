@@ -1,0 +1,9 @@
+# SIGTERM whoever holds <port> (use kill -9 <pid> for SIGKILL).
+[[ -n "$1" ]] || { _usage "portkill <port_number>"; return; }
+local pids=$(lsof -ti :"$1")
+if [[ -n "$pids" ]]; then
+  xargs kill 2>/dev/null <<< "$pids"
+  echo "Sent SIGTERM to process(es) on port $1"
+else
+  echo "No process found on port $1"
+fi

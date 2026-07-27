@@ -1,0 +1,4 @@
+# Fresh tempdir + cd into it.
+local tmp
+tmp=$(mktemp -d) || { echo "mktemp failed"; return 1; }
+cd "$tmp" && echo "Created temporary directory: $tmp"

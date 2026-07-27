@@ -1,0 +1,24 @@
+# Update everything: brew + zinit + zcompdump. Each lane is independent.
+emulate -L zsh
+setopt extendedglob
+
+print -P "%F{cyan}==> Homebrew packages...%f"
+brew update &&
+brew upgrade --greedy &&
+brew cleanup &&
+brew autoremove
+
+brew doctor || print -P "%F{yellow}(brew doctor reported issues — review above)%f"
+
+print -P "\n%F{cyan}==> Zinit plugins...%f"
+zinit self-update
+zinit update --all
+
+print -P "\n%F{cyan}==> Completion dump...%f"
+rm -f "${ZDOTDIR:-$HOME}"/.zcompdump*(N)
+
+_repair_clap_dynamic_completions
+
+rehash
+
+print -P "\n%F{green}==> Done.%f Run %F{yellow}exec zsh%f to refresh completions."

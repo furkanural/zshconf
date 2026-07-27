@@ -1,0 +1,3 @@
+# SIGTERM all processes whose name (case-insensitive) matches.
+[[ -n "$1" ]] || { _usage "killnamed <process_name>"; return; }
+pkill -i "$1"; (( $? == 1 )) && echo "No matching process found: $1"

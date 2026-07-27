@@ -1,0 +1,9 @@
+# Compiled zsh bytecode (regenerated in the background by init.zsh)
+*.zwc
+
+# Completion dumps (never belong in the repo)
+.zcompdump*
+
+# Defensive: secret-shaped files must be forced in, never drift in
+*.env
+secrets.*

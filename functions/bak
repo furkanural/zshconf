@@ -1,0 +1,7 @@
+# Timestamped backup copy(ies). Trailing slash stripped so `bak dir/` → sibling.
+[[ -n "$1" ]] || { _usage "bak <file>..."; return; }
+local file
+for file in "$@"; do
+  file="${file%/}"
+  cp -r "$file" "$file.bak.$(date +%Y%m%d_%H%M%S)"
+done
