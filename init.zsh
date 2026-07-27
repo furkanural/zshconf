@@ -1,7 +1,7 @@
 # init.zsh — entry point and load manifest.
 #
 # Sourced from a ~/.zshrc stub:
-#   export ZSHCONF="$HOME/.local/share/zsh-config"   # or wherever cloned
+#   export ZSHCONF="$HOME/.local/share/zshconf"   # or wherever cloned
 #   source "$ZSHCONF/init.zsh"
 #
 # Modules are sourced at TOP LEVEL, never inside a function: `typeset -U path`

@@ -1,4 +1,4 @@
-# my-zsh-config
+# zshconf
 
 An opinionated zsh configuration — a tuned completion system, staggered
 (turbo) plugin loading via [Zinit], and a [Starship] prompt — structured so
@@ -35,8 +35,8 @@ install the full toolset with `brew bundle` if you like.
 ## Install
 
 ```sh
-git clone https://github.com/OWNER/my-zsh-config ~/.local/share/zsh-config
-cd ~/.local/share/zsh-config
+git clone https://github.com/OWNER/zshconf ~/.local/share/zshconf
+cd ~/.local/share/zshconf
 ./install.sh        # read it first — it's short
 exec zsh
 ```
@@ -100,7 +100,7 @@ Your own Starship config? If `~/.config/starship.toml` exists (or
 ```sh
 rm ~/.zshrc                             # the stub
 mv ~/.zshrc.pre-zshconf ~/.zshrc        # restore your old config (if any)
-rm -rf ~/.local/share/zsh-config        # the clone
+rm -rf ~/.local/share/zshconf        # the clone
 ```
 
 Your overlay (`~/.config/zsh/`) is yours; keep or delete it.

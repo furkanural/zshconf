@@ -17,7 +17,7 @@ setopt err_exit nounset pipefail
 repo="${0:A:h}"
 zshrc="$HOME/.zshrc"
 overlay="${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.d"
-marker="# Managed by the zsh-config installer"
+marker="# Managed by the zshconf installer"
 
 stub="$marker — personal config goes in $overlay, not here.
 export ZSHCONF=\"$repo\"

@@ -32,7 +32,7 @@ run_installer
 t_eq "double backup: both kept" "$(print -rl -- $fake/.zshrc.pre-zshconf*(N) | grep -c .)" "2"
 
 # 5. Our stub with a stale repo path is refreshed in place
-print -r -- "# Managed by the zsh-config installer — x
+print -r -- "# Managed by the zshconf installer — x
 export ZSHCONF=\"/old/gone/path\"
 [[ -r \"\$ZSHCONF/init.zsh\" ]] && source \"\$ZSHCONF/init.zsh\"" >| "$fake/.zshrc"
 run_installer
