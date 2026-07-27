@@ -14,6 +14,13 @@
 # Resolve the repo root if the stub didn't export it.
 : "${ZSHCONF:=${${(%):-%N}:A:h}}"
 
+# ── Local overlay, pre-hook (optional): sourced BEFORE the core. The core
+# reads no configuration variables from it; it exists for values the core
+# consumes during startup (e.g. LS_COLORS, which the list-colors zstyle
+# captures at definition time). Everything else belongs in local.d below.
+ZSHCONF_LOCAL="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
+[[ -r "$ZSHCONF_LOCAL/pre.zsh" ]] && source "$ZSHCONF_LOCAL/pre.zsh"
+
 # ── Core (lifecycle phases, strict order)
 source "$ZSHCONF/modules/helpers.zsh"           # _need/_usage (call-time resolved, but defined first anyway)
 source "$ZSHCONF/modules/options.zsh"           # history + setopt (incl. zshaddhistory hook)
@@ -33,8 +40,6 @@ source "$ZSHCONF/modules/tools/docker.zsh"
 source "$ZSHCONF/modules/tools/bat.zsh"
 source "$ZSHCONF/modules/tools/fd.zsh"
 source "$ZSHCONF/modules/tools/ripgrep.zsh"
-source "$ZSHCONF/modules/tools/heroku.zsh"      # personal-layer candidate; moves to the overlay in phase 2
-source "$ZSHCONF/modules/tools/modelpreset.zsh" # personal-layer candidate; moves to the overlay in phase 2
 
 # ── Aliases by domain
 source "$ZSHCONF/modules/aliases/general.zsh"
@@ -48,6 +53,16 @@ fpath=("$ZSHCONF/functions" $fpath)
   fns=("$ZSHCONF"/functions/*(.N:t))
   (( $#fns )) && autoload -Uz -- "${fns[@]}"
 }
+
+# ── Local overlay, post-hook (optional): personal/machine drop-ins, sourced
+# LAST so they can override anything above — re-export vars, re-alias,
+# redefine functions, re-set zstyles (turbo plugins read them after the
+# prompt), and register extra zinit plugins (zinit is loaded by now).
+# One concern per file; files load in name order.
+for _zshconf_f in "$ZSHCONF_LOCAL"/local.d/*.zsh(.N); do
+  source "$_zshconf_f"
+done
+unset _zshconf_f
 
 # ── Auto-compile (background-rebuild stale bytecode; `source` only uses a
 #    .zwc that is at least as new as its source, so stale bytecode is
