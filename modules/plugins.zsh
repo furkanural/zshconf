@@ -3,12 +3,22 @@
 # evalcache trick) lives in this file. Other modules interact with zinit only
 # through _zinit_evalcache.
 
+# Bootstrap pin (TOFU): a fresh machine executes exactly this tag's code.
+# We reset to the tag but stay on the default branch, so a later
+# `zinit self-update` (the sanctioned update path, via sysup) still works —
+# accepting drift from the pin after first install. Bump deliberately.
+ZINIT_PIN="v3.15.0"
+
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
-  print -P "%F{33}Installing Zinit plugin manager...%f"
+  print -P "%F{33}Installing Zinit plugin manager (pinned to $ZINIT_PIN)...%f"
   command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
-  command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
-    print -P "%F{34}Zinit installation successful.%f" || \
+  if command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git"; then
+    command git -C "$HOME/.local/share/zinit/zinit.git" reset --hard --quiet "$ZINIT_PIN" \
+      || print -P "%F{160}Pin $ZINIT_PIN not found; staying on upstream HEAD.%f"
+    print -P "%F{34}Zinit installation successful.%f"
+  else
     print -P "%F{160}Zinit installation failed.%f"
+  fi
 fi
 
 source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
