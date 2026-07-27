@@ -1,5 +1,7 @@
 # zshconf
 
+[![CI](https://github.com/furkanural/zshconf/actions/workflows/ci.yml/badge.svg)](https://github.com/furkanural/zshconf/actions/workflows/ci.yml)
+
 An opinionated zsh configuration — a tuned completion system, staggered (turbo) plugin loading via [Zinit], and a [Starship] prompt — structured so you can **use it and keep pulling updates without forking**. The repo is sourced, never edited; everything personal or machine-specific lives in a local overlay outside the repo.
 
 This is not a framework. There are no settings files and no option matrix — you get one coherent, fast setup, plus a clean seam to layer your own config on top.
