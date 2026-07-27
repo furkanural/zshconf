@@ -1,6 +1,12 @@
-# Update everything: brew + zinit + zcompdump. Each lane is independent.
+# Update everything: config repo + brew + zinit + zcompdump. Each lane is independent.
 emulate -L zsh
 setopt extendedglob
+
+# Config lane only once the repo has a remote to pull from.
+if [[ -n "${ZSHCONF:-}" ]] && git -C "$ZSHCONF" remote 2>/dev/null | grep -q .; then
+  zshconf-update
+  print
+fi
 
 print -P "%F{cyan}==> Homebrew packages...%f"
 brew update &&

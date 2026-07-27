@@ -1,0 +1,23 @@
+# Update the shared config: fast-forward pull + recompile stale bytecode.
+# --ff-only is deliberate: if the repo has local edits, update stops instead
+# of merging — the core is sourced, never edited (personal config belongs in
+# ~/.config/zsh/local.d/).
+emulate -L zsh
+setopt localoptions extendedglob
+
+local repo="${ZSHCONF:?ZSHCONF is not set — is the ~/.zshrc stub in place?}"
+
+print -P "%F{cyan}==> Updating zsh config ($repo)...%f"
+git -C "$repo" pull --ff-only || {
+  print -P "%F{red}Pull failed.%f Local edits in the repo? They belong in ~/.config/zsh/local.d/."
+  return 1
+}
+
+local f
+for f in "$repo"/init.zsh "$repo"/modules/**/*.zsh(.N); do
+  if [[ ! -f "$f.zwc" || "$f" -nt "$f.zwc" ]]; then
+    zcompile "$f" 2>/dev/null
+  fi
+done
+
+print -P "%F{green}==> Config updated.%f Run %F{yellow}exec zsh%f to load it."
