@@ -4,6 +4,8 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 
 ## Unreleased
 
+- `zshconf-edit` — list overlay files and open `local.d` drop-ins / `pre.zsh` in `$VISUAL`/`$EDITOR`, creating them with a guidance header.
+
 Initial public structure:
 
 - Manifest + modules split of the original single-file config, with the load-order constraints documented in `init.zsh`.
@@ -13,3 +15,4 @@ Initial public structure:
 - Linux support: linuxbrew paths, `modules/os/` split, feature-detected `MANPAGER`; fixed `ip`/`free` alias shadowing on Linux.
 - Zinit bootstrap pinned to a release tag (TOFU).
 - Test suite + 2×2 CI matrix + report-only zsh-bench job.
+- Android SDK + Maestro on PATH: `ANDROID_HOME` export (pre-set value respected, e.g. from `pre.zsh`) with `(N)`-guarded `emulator`/`platform-tools`/`~/.maestro/bin` entries.

@@ -50,6 +50,14 @@ All personal and machine-specific config lives in `${XDG_CONFIG_HOME:-~/.config}
 - **`local.d/*.zsh`** — drop-in files, sourced _after_ everything in the repo, in name order. Override anything: re-export variables, re-alias, redefine functions, re-set zstyles, add your own `zinit` plugins. One concern per file (`editor.zsh`, `work.zsh`, …).
 - **`pre.zsh`** — sourced _before_ the core. Only needed for values the core consumes during startup (e.g. `LS_COLORS`). When in doubt, use `local.d`.
 
+The `zshconf-edit` helper opens overlay files in your `$VISUAL`/`$EDITOR` — no need to remember the paths:
+
+```sh
+zshconf-edit          # list your overlay files
+zshconf-edit work     # create/edit ~/.config/zsh/local.d/work.zsh
+zshconf-edit pre      # edit pre.zsh
+```
+
 Examples:
 
 ```zsh
@@ -82,7 +90,7 @@ just test        # full suite (what CI runs)
 just test-bare   # CI's toughest cell locally: bare Linux in Docker
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit — notably the load-order constraints in `init.zsh` — and [CONTRIBUTING.md](CONTRIBUTING.md) for the scope policy before opening a PR.
+See [docs/CHEATSHEET.md](docs/CHEATSHEET.md) for every command, alias, and keybinding, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit — notably the load-order constraints in `init.zsh` — and [CONTRIBUTING.md](CONTRIBUTING.md) for the scope policy before opening a PR.
 
 ## License
 

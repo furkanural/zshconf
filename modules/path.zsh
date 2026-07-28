@@ -1,5 +1,10 @@
-# ── PATH  (brew AS → brew Intel → brew Linux → system → user-local; (N) skips missing dirs)
+export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
+
+# ── PATH  (Android/Maestro → brew AS → brew Intel → brew Linux → system → user-local; (N) skips missing dirs)
 path=(
+  $ANDROID_HOME/emulator(N)
+  $ANDROID_HOME/platform-tools(N)
+  $HOME/.maestro/bin(N)
   /opt/homebrew/bin(N)
   /opt/homebrew/sbin(N)
   /opt/homebrew/opt/curl/bin(N)

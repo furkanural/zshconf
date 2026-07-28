@@ -1,11 +1,5 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# Whitelist philosophy: `format` names every module that may render — anything
-# not listed is never even evaluated (faster, and new Starship modules can't
-# sneak into the prompt). To add a module, add it to the format string.
-#
-# username/hostname only render over SSH or as root; jobs/battery/status only
-# when relevant. Day to day this renders: directory, git, cmd_duration, ❯.
 format = """\
 $username\
 $hostname\
@@ -16,13 +10,19 @@ $git_state\
 $git_status\
 $docker_context\
 $package\
+$elixir\
+$nodejs\
 $python\
 $ruby\
+$gcloud\
+$env_var\
+$mise\
 $cmd_duration\
 $line_break\
 $jobs\
 $battery\
 $status\
+$container\
 $character"""
 
 command_timeout = 500
@@ -34,3 +34,57 @@ min_time = 5_000  # Show timing for commands > 5 seconds
 format = "took [$duration]($style) "
 style = "bold yellow"
 show_milliseconds = true
+
+[aws]
+disabled = true
+
+[azure]
+disabled = true
+
+[kubernetes]
+disabled = true
+
+[terraform]
+disabled = true
+
+[vagrant]
+disabled = true
+
+[nix_shell]
+disabled = true
+
+[golang]
+disabled = true
+
+[java]
+disabled = true
+
+[rust]
+disabled = true
+
+[php]
+disabled = true
+
+[haskell]
+disabled = true
+
+[julia]
+disabled = true
+
+[lua]
+disabled = true
+
+[nim]
+disabled = true
+
+[perl]
+disabled = true
+
+[scala]
+disabled = true
+
+[zig]
+disabled = true
+
+[nodejs]
+disabled = true
