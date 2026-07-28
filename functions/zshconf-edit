@@ -1,0 +1,66 @@
+# Open personal overlay files (${XDG_CONFIG_HOME:-~/.config}/zsh/) in an
+# editor — the supported way to customize this config without touching the
+# repo (which is sourced, never edited; see `zshconf-update`).
+#   zshconf-edit              list overlay files
+#   zshconf-edit pre          edit pre.zsh (startup-consumed values only)
+#   zshconf-edit <name>       edit local.d/<name>.zsh (created on demand)
+# Opens in $VISUAL if set, else $EDITOR. Overlay paths are repo-relative via
+# ZSHCONF_LOCAL, set by init.zsh.
+emulate -L zsh
+setopt localoptions extendedglob
+
+local overlay="${ZSHCONF_LOCAL:-${XDG_CONFIG_HOME:-$HOME/.config}/zsh}"
+local editor="${VISUAL:-${EDITOR:-}}"
+
+case "${1:-}" in
+  -h|--help)
+    echo "Usage: zshconf-edit [pre|<name>]"
+    echo "  zshconf-edit          List overlay files"
+    echo "  zshconf-edit pre      Edit pre.zsh (before the core; rarely needed)"
+    echo "  zshconf-edit <name>   Edit local.d/<name>.zsh (created if missing)"
+    return 0
+    ;;
+esac
+
+# No argument: list what's there.
+if (( $# == 0 )); then
+  local -a files
+  files=("$overlay"/pre.zsh(N) "$overlay"/local.d/*.zsh(N))
+  if (( $#files )); then
+    print -P "%F{cyan}==> Overlay files in $overlay%f"
+    print -rl -- "${files[@]#$overlay/}"
+  else
+    print -P "%F{yellow}No overlay files yet.%f Create one: %F{yellow}zshconf-edit <name>%f"
+  fi
+  return 0
+fi
+
+[[ -n "$editor" ]] || {
+  print -P "%F{red}No editor set.%f Export EDITOR or VISUAL first."
+  return 1
+}
+
+local target
+if [[ "$1" == "pre" || "$1" == "pre.zsh" ]]; then
+  target="$overlay/pre.zsh"
+else
+  local name="${1%.zsh}"
+  if [[ "$name" == */* || "$name" == .* ]]; then
+    print -P "%F{red}Invalid name.%f Use a plain file name, e.g. %F{yellow}zshconf-edit work%f"
+    return 1
+  fi
+  target="$overlay/local.d/$name.zsh"
+fi
+
+mkdir -p "${target:h}"
+if [[ ! -f "$target" ]]; then
+  if [[ "$target" == */pre.zsh ]]; then
+    print -r -- "# Sourced BEFORE the core. Only for values the core consumes during
+# startup (e.g. LS_COLORS). When in doubt, use local.d instead." > "$target"
+  else
+    print -r -- "# Sourced AFTER the core — override anything: re-export vars, re-alias,
+# redefine functions, re-set zstyles, add your own zinit plugins." > "$target"
+  fi
+fi
+
+"${(z)editor}" "$target"
