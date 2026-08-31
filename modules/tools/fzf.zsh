@@ -17,5 +17,25 @@ if (( $+commands[fzf] )); then
     export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
   fi
 
+  # bat preview on Ctrl+T.
+  if (( $+commands[bat] )); then
+    export _FZF_PREVIEW_CMD='bat --color=always --style=plain,numbers --line-range=:500 {}'
+    export FZF_CTRL_T_OPTS="--preview '$_FZF_PREVIEW_CMD'"
+  fi
+
+  # Ctrl+F: file picker excluding hidden files, inserts path at cursor.
+  _fzf_file_no_hidden() {
+    local cmd result
+    cmd="${FZF_DEFAULT_COMMAND/--hidden /}"
+    if [[ -n "$_FZF_PREVIEW_CMD" ]]; then
+      result=$(eval "${cmd:-find . -type f}" | fzf --preview "$_FZF_PREVIEW_CMD")
+    else
+      result=$(eval "${cmd:-find . -type f}" | fzf)
+    fi && LBUFFER+="$result"
+    zle reset-prompt
+  }
+  zle -N _fzf_file_no_hidden
+  bindkey '^F' _fzf_file_no_hidden
+
   _zinit_evalcache fzf-init 'fzf --zsh'
 fi

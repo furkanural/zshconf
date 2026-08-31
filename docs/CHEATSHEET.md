@@ -41,6 +41,7 @@ Day-to-day aliases (`gst`, `gco`, `gp`, `gl`, …) come from the OMZ git plugin.
 | `gbclean --force` | Force-delete local branches, even unmerged ones |
 | `ghopen [path\|issue\|-b branch]` | Open the repo / file / issue / branch in the browser (`gh browse`) |
 | `ghpr` | Open the current branch's PR in the browser; creates a draft PR if none exists |
+| `gadog` | `git log --all --decorate --oneline --graph` — full graph, all branches |
 
 ## System & processes
 
@@ -94,7 +95,8 @@ Day-to-day aliases (`gst`, `gco`, `gp`, `gl`, …) come from the OMZ git plugin.
 | Keybinding | What it does |
 |---|---|
 | `Ctrl+R` | Fuzzy history search |
-| `Ctrl+T` | Insert a file path (fd-powered, respects `.gitignore`) |
+| `Ctrl+T` | Insert a file path (fd-powered, respects `.gitignore`), bat preview |
+| `Ctrl+F` | Insert a file path, hidden files excluded |
 | `Alt+C` | `cd` into a picked directory |
 | `Ctrl+U` / `Ctrl+D` (inside fzf) | Scroll preview half-page up/down |
 
@@ -131,8 +133,10 @@ Emacs mode, plus:
 | Keys | What it does |
 |---|---|
 | `Alt+←` / `Alt+→` | Move by word |
+| `Ctrl+←` / `Ctrl+→` | Move by word |
 | `↑` / `↓` (or `Ctrl+P` / `Ctrl+N`) | History-substring search — type a prefix, then scroll matches |
 | `Ctrl+Space` | Accept autosuggestion |
+| `Ctrl+\` | Toggle autosuggestions (handy for screen sharing) |
 | `Alt+H` / `Alt+U` | `cd ~` / `cd ..` |
 | `Ctrl+U` / `Ctrl+K` | Kill to line start / end |
 | `Ctrl+W` / `Ctrl+Y` | Kill word backward / yank |

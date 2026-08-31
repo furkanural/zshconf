@@ -1,7 +1,7 @@
 # ── History
 HISTFILE="${ZDOTDIR:-$HOME}/.zsh_history"
-HISTSIZE=50000
-SAVEHIST=50000
+HISTSIZE=100000
+SAVEHIST=100000
 
 setopt SHARE_HISTORY              # implies INC_APPEND_HISTORY
 setopt EXTENDED_HISTORY           # timestamp + duration

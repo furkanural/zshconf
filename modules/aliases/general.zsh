@@ -15,3 +15,6 @@ if ! (( $+commands[eza] )); then
   alias la='ls -A'
   alias l='ls -CF'
 fi
+
+# ── Aliases: git  (gst/gco/gp/glog come from OMZP::git)
+alias gadog='git log --all --decorate --oneline --graph'  # glog + all branches
