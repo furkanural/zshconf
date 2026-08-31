@@ -5,6 +5,10 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 ## Unreleased
 
 - `zshconf-edit` — list overlay files and open `local.d` drop-ins / `pre.zsh` in `$VISUAL`/`$EDITOR`, creating them with a guidance header.
+- Keybindings: `Ctrl+←`/`Ctrl+→` word jump, `Ctrl+\` toggles autosuggestions, `Ctrl+F` fzf file picker without hidden files.
+- fzf: bat preview on `Ctrl+T`.
+- `gadog` alias — `git log --all --decorate --oneline --graph`.
+- History raised to 100k entries.
 
 Initial public structure:
 

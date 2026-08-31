@@ -6,6 +6,9 @@ bindkey '^[[1;3C' forward-word          # Alt+Right
 bindkey '^[^[[D'  backward-word         # Alt+Left  (alt seq)
 bindkey '^[^[[C'  forward-word          # Alt+Right (alt seq)
 
+bindkey '^[[1;5D' backward-word         # Ctrl+Left
+bindkey '^[[1;5C' forward-word          # Ctrl+Right
+
 bindkey '^U' backward-kill-line         # Ctrl+U
 bindkey '^K' kill-line                  # Ctrl+K
 bindkey '^W' backward-kill-word         # Ctrl+W

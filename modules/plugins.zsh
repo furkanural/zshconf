@@ -38,6 +38,14 @@ _history_substring_search_setup() {
   unset -f _history_substring_search_setup
 }
 
+# Bound to zsh-autosuggestions via Tier 2 atload; self-deletes.
+_autosuggest_setup() {
+  _zsh_autosuggest_start
+  bindkey '^\' autosuggest-toggle        # Ctrl+\ — handy for screen sharing
+
+  unset -f _autosuggest_setup
+}
+
 # ── eval-cache helper: cache a tool's init output via a null plugin (refresh via sysup)
 #   _zinit_evalcache <id> <generator-cmd> [wait]
 _zinit_evalcache() {
@@ -69,7 +77,7 @@ zinit wait'0b' lucid for \
   OMZP::git \
   atload'_history_substring_search_setup' \
     zsh-users/zsh-history-substring-search \
-  atload"!_zsh_autosuggest_start" \
+  atload"!_autosuggest_setup" \
     zsh-users/zsh-autosuggestions \
     zdharma-continuum/fast-syntax-highlighting
 
