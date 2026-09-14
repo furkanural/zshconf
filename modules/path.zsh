@@ -1,7 +1,7 @@
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 export PNPM_HOME="${PNPM_HOME:-$HOME/Library/pnpm}"
 
-# ── PATH  (Android/Maestro/pnpm → brew AS → brew Intel → brew Linux → system → user-local; (N) skips missing dirs)
+# ── PATH  (Android/Maestro/pnpm → brew AS (+gcloud SDK) → brew Intel → brew Linux → system → user-local; (N) skips missing dirs)
 path=(
   $ANDROID_HOME/emulator(N)
   $ANDROID_HOME/platform-tools(N)
@@ -10,6 +10,7 @@ path=(
   /opt/homebrew/bin(N)
   /opt/homebrew/sbin(N)
   /opt/homebrew/opt/curl/bin(N)
+  /opt/homebrew/share/google-cloud-sdk/bin(N)
   /usr/local/bin(N)
   /usr/local/sbin(N)
   /home/linuxbrew/.linuxbrew/bin(N)
