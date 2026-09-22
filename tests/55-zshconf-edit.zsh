@@ -31,6 +31,12 @@ zshconf-edit pre
 t_eq    "pre.zsh created"            "$(cat -- "$rec")"                 "$ZSHCONF_LOCAL/pre.zsh"
 t_match "pre.zsh has guidance header" "$(cat -- "$ZSHCONF_LOCAL/pre.zsh")" "*BEFORE the core*"
 
+# Edit env.zsh.
+: > "$rec"
+zshconf-edit env
+t_eq    "env.zsh created"            "$(cat -- "$rec")"                 "$ZSHCONF_LOCAL/env.zsh"
+t_match "env.zsh has guidance header" "$(cat -- "$ZSHCONF_LOCAL/env.zsh")" "*login shell*"
+
 # List: populated overlay shows repo-relative paths.
 out=$(zshconf-edit 2>&1)
 t_match "lists pre.zsh"      "$out" "*pre.zsh*"

@@ -21,6 +21,16 @@
 ZSHCONF_LOCAL="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
 [[ -r "$ZSHCONF_LOCAL/pre.zsh" ]] && source "$ZSHCONF_LOCAL/pre.zsh"
 
+# ── Env seam: ~/.config/zsh/env.zsh is ALSO sourced from ~/.zprofile (wired
+# by install.sh) so GUI apps that read a login shell's environment (Zed, VS
+# Code) see it. Sourced here too so non-login interactive shells get it; the
+# guard keeps login+interactive shells from running it twice. env-only —
+# non-interactive shells will source it.
+if [[ -z ${ZSHCONF_ENV_SOURCED:-} && -r "$ZSHCONF_LOCAL/env.zsh" ]]; then
+  ZSHCONF_ENV_SOURCED=1   # plain assignment: a prefix assignment on a
+  source "$ZSHCONF_LOCAL/env.zsh"   # builtin would not persist in zsh
+fi
+
 # ── Core (lifecycle phases, strict order)
 source "$ZSHCONF/modules/helpers.zsh"           # _need/_usage (call-time resolved, but defined first anyway)
 source "$ZSHCONF/modules/options.zsh"           # history + setopt (incl. zshaddhistory hook)
