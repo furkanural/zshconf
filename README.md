@@ -27,7 +27,7 @@ cd ~/.local/share/zshconf
 exec zsh
 ```
 
-The installer does three things, idempotently: backs up any existing `~/.zshrc` (to `~/.zshrc.pre-zshconf`), writes a 3-line stub that sources this repo, and creates the overlay directory. It does **not** install tools, touch your existing prompt config, or migrate anything. First startup clones Zinit (pinned to a release tag) and the plugins; later startups are fast.
+The installer does four things, idempotently: backs up any existing `~/.zshrc` (to `~/.zshrc.pre-zshconf`), writes a 3-line stub that sources this repo, appends a marked block to `~/.zprofile` that sources the env overlay (existing content like `brew shellenv` is kept), and creates the overlay directory. It does **not** install tools, touch your existing prompt config, or migrate anything. First startup clones Zinit (pinned to a release tag) and the plugins; later startups are fast.
 
 Optional extras:
 
@@ -48,6 +48,7 @@ zshconf-update      # git pull --ff-only + recompile, then: exec zsh
 All personal and machine-specific config lives in `${XDG_CONFIG_HOME:-~/.config}/zsh/`, outside this repo:
 
 - **`local.d/*.zsh`** — drop-in files, sourced _after_ everything in the repo, in name order. Override anything: re-export variables, re-alias, redefine functions, re-set zstyles, add your own `zinit` plugins. One concern per file (`editor.zsh`, `work.zsh`, …).
+- **`env.zsh`** — exports that GUI apps must see belong here, not in `local.d`: Zed, VS Code and friends read the environment of a **login shell** (`.zprofile`), which never runs `~/.zshrc`. `env.zsh` is sourced from `~/.zprofile` (wired by the installer) _and_ from `init.zsh`, with a guard so it runs once. Keep it env-only — non-interactive shells source it.
 - **`pre.zsh`** — sourced _before_ the core. Only needed for values the core consumes during startup (e.g. `LS_COLORS`). When in doubt, use `local.d`.
 
 The `zshconf-edit` helper opens overlay files in your `$VISUAL`/`$EDITOR` — no need to remember the paths:
@@ -55,6 +56,7 @@ The `zshconf-edit` helper opens overlay files in your `$VISUAL`/`$EDITOR` — no
 ```sh
 zshconf-edit          # list your overlay files
 zshconf-edit work     # create/edit ~/.config/zsh/local.d/work.zsh
+zshconf-edit env      # edit env.zsh (exports GUI apps must see)
 zshconf-edit pre      # edit pre.zsh
 ```
 
@@ -69,7 +71,7 @@ export EDITOR=vim
 export SOME_INTERNAL_URL=...
 ```
 
-Patterns worth knowing: the overlay directory can itself be a **private git repo** (public core + private personal layer, synced across machines); secrets belong in a `chmod 600` file sourced from a drop-in, or better, a secret manager — never in either repo.
+Patterns worth knowing: the overlay directory can itself be a **private git repo** (public core + private personal layer, synced across machines); secrets belong in `env.zsh` (`chmod 600`) or, better, a secret manager such as macOS Keychain — never in either repo.
 
 Your own Starship config? If `~/.config/starship.toml` exists (or `STARSHIP_CONFIG` is set), it wins; otherwise the repo's config is used.
 
@@ -77,6 +79,8 @@ Your own Starship config? If `~/.config/starship.toml` exists (or `STARSHIP_CONF
 
 ```sh
 rm ~/.zshrc                             # the stub
+rm ~/.zprofile.zwc 2>/dev/null          # stale bytecode, if any
+# remove the marked "zshconf env" block from ~/.zprofile (keep your own lines)
 mv ~/.zshrc.pre-zshconf ~/.zshrc        # restore your old config (if any)
 rm -rf ~/.local/share/zshconf        # the clone
 ```

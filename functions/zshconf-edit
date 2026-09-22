@@ -3,6 +3,7 @@
 # repo (which is sourced, never edited; see `zshconf-update`).
 #   zshconf-edit              list overlay files
 #   zshconf-edit pre          edit pre.zsh (startup-consumed values only)
+#   zshconf-edit env          edit env.zsh (exports GUI apps must see)
 #   zshconf-edit <name>       edit local.d/<name>.zsh (created on demand)
 # Opens in $VISUAL if set, else $EDITOR. Overlay paths are repo-relative via
 # ZSHCONF_LOCAL, set by init.zsh.
@@ -14,9 +15,10 @@ local editor="${VISUAL:-${EDITOR:-}}"
 
 case "${1:-}" in
   -h|--help)
-    echo "Usage: zshconf-edit [pre|<name>]"
+    echo "Usage: zshconf-edit [pre|env|<name>]"
     echo "  zshconf-edit          List overlay files"
     echo "  zshconf-edit pre      Edit pre.zsh (before the core; rarely needed)"
+    echo "  zshconf-edit env      Edit env.zsh (sourced by login shells; GUI apps see it)"
     echo "  zshconf-edit <name>   Edit local.d/<name>.zsh (created if missing)"
     return 0
     ;;
@@ -25,7 +27,7 @@ esac
 # No argument: list what's there.
 if (( $# == 0 )); then
   local -a files
-  files=("$overlay"/pre.zsh(N) "$overlay"/local.d/*.zsh(N))
+  files=("$overlay"/pre.zsh(N) "$overlay"/env.zsh(N) "$overlay"/local.d/*.zsh(N))
   if (( $#files )); then
     print -P "%F{cyan}==> Overlay files in $overlay%f"
     print -rl -- "${files[@]#$overlay/}"
@@ -43,6 +45,8 @@ fi
 local target
 if [[ "$1" == "pre" || "$1" == "pre.zsh" ]]; then
   target="$overlay/pre.zsh"
+elif [[ "$1" == "env" || "$1" == "env.zsh" ]]; then
+  target="$overlay/env.zsh"
 else
   local name="${1%.zsh}"
   if [[ "$name" == */* || "$name" == .* ]]; then
@@ -57,6 +61,11 @@ if [[ ! -f "$target" ]]; then
   if [[ "$target" == */pre.zsh ]]; then
     print -r -- "# Sourced BEFORE the core. Only for values the core consumes during
 # startup (e.g. LS_COLORS). When in doubt, use local.d instead." > "$target"
+  elif [[ "$target" == */env.zsh ]]; then
+    print -r -- "# Env overlay — sourced by LOGIN shells (from ~/.zprofile) and by
+# non-login interactive shells (from init.zsh). Put exports GUI apps must
+# see here (Zed, VS Code read a login shell's environment). Keep it
+# env-only: no aliases, prompts, or interactive code." > "$target"
   else
     print -r -- "# Sourced AFTER the core — override anything: re-export vars, re-alias,
 # redefine functions, re-set zstyles, add your own zinit plugins." > "$target"

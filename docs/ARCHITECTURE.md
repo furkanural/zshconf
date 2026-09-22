@@ -6,6 +6,7 @@ The design in one sentence: **a layered core that is sourced, never edited, with
 ~/.zshrc (3-line stub, user-owned)
   └── $ZSHCONF/init.zsh (the manifest)
         ├── ~/.config/zsh/pre.zsh          (overlay pre-hook, optional)
+        ├── ~/.config/zsh/env.zsh          (env seam: also sourced from ~/.zprofile)
         ├── modules/*.zsh                  (lifecycle phases, strict order)
         ├── modules/tools/*.zsh            (feature-detected integrations)
         ├── modules/aliases/*.zsh          (by domain)
@@ -47,6 +48,7 @@ Deferred loading has a subtle consequence the overlay exploits: overlay zstyles 
 
 - **Starship config:** explicit `$STARSHIP_CONFIG` → user's `~/.config/starship.toml` → repo default. No starship → minimal fallback `PS1`.
 - **Overlay:** `pre.zsh` (before core; startup-consumed values only) → core → `local.d/*.zsh` in name order (winner takes all). Only values the core reads during startup need `pre.zsh`; everything else overrides fine from `local.d` because it's read at call time.
+- **Env seam:** `env.zsh` is sourced from `~/.zprofile` (wired by `install.sh`) so login shells get it — including the login shell GUI apps like Zed and VS Code spawn to read your environment — and from `init.zsh` so non-login interactive shells get it too. A `ZSHCONF_ENV_SOURCED` guard keeps login+interactive shells from running it twice. Env-only: non-interactive shells source it.
 
 ## Bytecode
 
