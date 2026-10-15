@@ -16,7 +16,7 @@ This is not a framework. There are no settings files and no option matrix — yo
 
 ## Requirements
 
-`zsh` (5.8+), `git`, and `curl` — that's it. Everything else is optional; install the full toolset with `brew bundle` if you like.
+`zsh` (5.8+), `git`, and `curl` — that's it. Everything else is optional; install the full toolset with `brew bundle --file "$ZSHCONF/Brewfile"` if you like.
 
 ## Install
 
@@ -32,7 +32,7 @@ The installer does four things, idempotently: backs up any existing `~/.zshrc` (
 Optional extras:
 
 ```sh
-brew bundle         # the tools the config integrates with
+brew bundle --file "$ZSHCONF/Brewfile"   # the tools the config integrates with (works from any directory)
 ```
 
 ## Update

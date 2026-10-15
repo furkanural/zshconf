@@ -1,6 +1,6 @@
 # Cheat Sheet
 
-Every command, alias, function, and keybinding this config adds. Tools are feature-detected — anything whose tool isn't installed simply doesn't exist (install the full set with `brew bundle`).
+Every command, alias, function, and keybinding this config adds. Tools are feature-detected — anything whose tool isn't installed simply doesn't exist (install the full set with `brew bundle --file "$ZSHCONF/Brewfile"`).
 
 ## Navigation
 
