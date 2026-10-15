@@ -1,0 +1,5 @@
+#compdef cdl mkcd
+# Completion for cdl / mkcd: directories only. (mkcd also accepts a new
+# path; existing directories are still the useful prefix to complete.)
+
+(( CURRENT == 2 )) && _directories

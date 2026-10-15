@@ -1,0 +1,18 @@
+#compdef zshconf-edit
+# Completion for zshconf-edit (functions/zshconf-edit): the fixed overlay
+# files plus existing local.d drop-in names. New names can still be typed.
+
+local overlay="${ZSHCONF_LOCAL:-${XDG_CONFIG_HOME:-$HOME/.config}/zsh}"
+local -a fixed dropins
+fixed=(
+  'pre:edit pre.zsh (sourced before the core)'
+  'env:edit env.zsh (exports GUI apps must see)'
+)
+dropins=("$overlay"/local.d/*.zsh(N:t:r))
+
+if (( CURRENT == 2 )); then
+  _describe -t overlay-files 'overlay file' fixed
+  (( $#dropins )) && _describe -t drop-ins 'local.d drop-in' dropins
+  [[ $PREFIX == -* ]] && _describe -t options 'option' '(--help:show\ usage -h:show\ usage)'
+fi
+return 0

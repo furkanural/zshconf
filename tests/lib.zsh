@@ -62,3 +62,40 @@ t_boot_tiers() {
     print 'exit'
   } | ZDOTDIR="$1" XDG_CONFIG_HOME="$2" zsh -i 2>"$TWORK/stderr-tiers"
 }
+
+# ── Completion harness: real Tab presses in a minimal pty shell (compinit +
+# the repo's completions/ only — no fzf-tab or menu UI), so assertions are
+# about the completers themselves. Reads are non-blocking with bounded
+# waits: CI fails instead of hanging.
+#   t_comp_setup [extra .zshrc lines]   once per test file
+#   t_complete <input>                  type <input> + Tab; sets $screen
+t_comp_setup() {
+  mkdir -p "$TWORK/ptyzdot"
+  print -r -- "PS1='READY> '
+fpath=(\"$REPO/completions\" \$fpath)
+autoload -Uz compinit && compinit -u -d \"$TWORK/ptyzdot/.zcompdump\"
+zstyle ':completion:*' list-separator '--'
+setopt autolist nolistbeep
+$1" > "$TWORK/ptyzdot/.zshrc"
+  zmodload zsh/zpty
+}
+
+t_complete() {
+  zpty tcomp "ZDOTDIR='$TWORK/ptyzdot' TERM=dumb COLUMNS=200 zsh -i"
+  screen=""
+  local chunk
+  integer i
+  for (( i = 0; i < 100; i++ )); do
+    zpty -rt tcomp chunk && screen+="$chunk"
+    [[ "$screen" == *'READY> '* ]] && break
+    sleep 0.1
+  done
+  screen=""
+  zpty -n -w tcomp "$1"$'\t'
+  for (( i = 0; i < 30; i++ )); do
+    zpty -rt tcomp chunk && screen+="$chunk"
+    sleep 0.1
+  done
+  zpty -d tcomp
+  screen="${screen//$'\r'/}"
+}
