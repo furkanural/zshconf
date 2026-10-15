@@ -8,6 +8,15 @@ setopt localoptions extendedglob
 local repo="${ZSHCONF:?ZSHCONF is not set — is the ~/.zshrc stub in place?}"
 
 print -P "%F{cyan}==> Updating zsh config ($repo)...%f"
+
+# --ff-only alone only catches local *commits*; uncommitted edits to tracked
+# files would survive a pull silently. Refuse those too.
+if [[ -n "$(git -C "$repo" status --porcelain --untracked-files=no 2>/dev/null)" ]]; then
+  print -P "%F{red}Repo has local edits — not updating.%f They belong in ~/.config/zsh/local.d/."
+  git -C "$repo" status --short --untracked-files=no
+  return 1
+fi
+
 git -C "$repo" pull --ff-only || {
   print -P "%F{red}Pull failed.%f Local edits in the repo? They belong in ~/.config/zsh/local.d/."
   return 1

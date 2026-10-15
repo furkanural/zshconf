@@ -4,6 +4,7 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 
 ## Unreleased
 
+- `zshconf-update` now refuses to pull when the repo has uncommitted edits (previously `--ff-only` only caught local commits, so edits to files upstream didn't touch survived silently).
 - `sysup` now skips missing Homebrew/Zinit cleanly, prints a per-lane summary, and returns nonzero on failures.
 - `sysup --topgrade` (or `SYSUP_BACKEND=topgrade`) runs plain `topgrade` with its own defaults, configured via `~/.config/topgrade.toml`. Topgrade added to the `Brewfile`.
 - `zshconf-edit` — list overlay files and open `local.d` drop-ins / `pre.zsh` in `$VISUAL`/`$EDITOR`, creating them with a guidance header.

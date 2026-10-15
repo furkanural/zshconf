@@ -41,7 +41,7 @@ brew bundle         # the tools the config integrates with
 zshconf-update      # git pull --ff-only + recompile, then: exec zsh
 ```
 
-`--ff-only` is deliberate: if you've edited repo files, update stops instead of merging. That's the contract — the core is sourced, never edited. (The `sysup` function runs this automatically as one of its lanes.)
+Update is deliberately strict: if the repo has uncommitted edits or local commits, it stops instead of merging. That's the contract — the core is sourced, never edited. (The `sysup` function runs this automatically as one of its lanes.)
 
 `sysup` also updates Homebrew and Zinit, refreshes completions, prints a per-lane summary, and returns nonzero if any update fails.
 
