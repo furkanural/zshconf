@@ -4,6 +4,8 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 
 ## Unreleased
 
+- `sysup` now skips missing Homebrew/Zinit cleanly, prints a per-lane summary, and returns nonzero on failures.
+- `sysup --topgrade` (or `SYSUP_BACKEND=topgrade`) runs plain `topgrade` with its own defaults, configured via `~/.config/topgrade.toml`. Topgrade added to the `Brewfile`.
 - `zshconf-edit` — list overlay files and open `local.d` drop-ins / `pre.zsh` in `$VISUAL`/`$EDITOR`, creating them with a guidance header.
 - Keybindings: `Ctrl+←`/`Ctrl+→` word jump, `Ctrl+\` toggles autosuggestions, `Ctrl+F` fzf file picker without hidden files.
 - fzf: bat preview on `Ctrl+T`.
