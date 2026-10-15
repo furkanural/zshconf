@@ -43,4 +43,26 @@ t_eq "--force deletes unmerged too" "$(git branch --format='%(refname:short)' | 
 
 out=$(gbclean 2>&1)
 t_eq "nothing to delete message" "$out" "No branches to delete."
+
+# zshconf-update: refuses uncommitted edits (which --ff-only alone would let
+# through when upstream doesn't touch the file), fast-forwards when clean.
+autoload -Uz zshconf-update
+upstream="$TWORK/upstream" clone="$TWORK/clone"
+git init -q -b main "$upstream"
+git -C "$upstream" config user.email test@test
+git -C "$upstream" config user.name test
+print a > "$upstream/a.zsh" && print b > "$upstream/b.zsh"
+git -C "$upstream" add . && git -C "$upstream" commit -qm init
+git clone -q "$upstream" "$clone"
+print a2 > "$upstream/a.zsh" && git -C "$upstream" commit -qam "touch a only"
+
+print local-edit >> "$clone/b.zsh"
+ZSHCONF="$clone" zshconf-update >/dev/null 2>&1
+t_eq "update refuses uncommitted edits" "$?" "1"
+t_eq "clone not advanced when dirty" "$(cat -- "$clone/a.zsh")" "a"
+
+git -C "$clone" checkout -q -- b.zsh
+ZSHCONF="$clone" zshconf-update >/dev/null 2>&1
+t_eq "update succeeds when clean" "$?" "0"
+t_eq "clone fast-forwarded" "$(cat -- "$clone/a.zsh")" "a2"
 t_done
