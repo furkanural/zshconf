@@ -120,7 +120,8 @@ Switch Claude Code / Anthropic-API tools between endpoints and models. Presets a
 |---|---|
 | `zshconf-update` | Fast-forward-pull this repo + recompile bytecode (stops on local edits — those belong in `~/.config/zsh/local.d/`) |
 | `zshconf-edit [pre\|<name>]` | List overlay files, or open `local.d/<name>.zsh` / `pre.zsh` in `$VISUAL`/`$EDITOR` (created with a guidance header if missing) |
-| `sysup` | Update everything: this repo, Homebrew, Zinit plugins, completion dump — then `exec zsh` |
+| `sysup` | Update this repo, Homebrew, Zinit plugins, completion dump; prints a summary and returns nonzero on failure. Then run `exec zsh` |
+| `sysup --topgrade` | Update this repo, then everything Topgrade detects (incl. Homebrew + Zinit), then completions. Configure in `~/.config/topgrade.toml`; default via `SYSUP_BACKEND=topgrade` |
 | `just test` | Full test suite (what CI runs) |
 | `just parse` | Quick syntax gate only |
 | `just test-bare` | CI's toughest cell locally: bare Linux in Docker |

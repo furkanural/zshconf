@@ -43,6 +43,17 @@ zshconf-update      # git pull --ff-only + recompile, then: exec zsh
 
 `--ff-only` is deliberate: if you've edited repo files, update stops instead of merging. That's the contract — the core is sourced, never edited. (The `sysup` function runs this automatically as one of its lanes.)
 
+`sysup` also updates Homebrew and Zinit, refreshes completions, prints a per-lane summary, and returns nonzero if any update fails.
+
+Want *everything* updated — mise runtimes, rustup, npm globals, editor extensions, macOS updates, and more? Install [Topgrade] (it's in the `Brewfile`) and run `sysup --topgrade`: it updates this repo, runs plain `topgrade` (which also covers Homebrew and Zinit), then refreshes completions. To make it your default:
+
+```zsh
+# ~/.config/zsh/local.d/updates.zsh
+export SYSUP_BACKEND=topgrade
+```
+
+The repo passes no Topgrade config — tool defaults apply, and you tune it in your own `~/.config/topgrade.toml` (created by Topgrade on first run), e.g. `disable = ["containers"]` under `[misc]`. Topgrade asks before risky steps such as macOS system updates. `sysup --native` always runs the original lanes.
+
 ## Make it yours (the overlay)
 
 All personal and machine-specific config lives in `${XDG_CONFIG_HOME:-~/.config}/zsh/`, outside this repo:
@@ -102,4 +113,5 @@ See [docs/CHEATSHEET.md](docs/CHEATSHEET.md) for every command, alias, and keybi
 
 [Zinit]: https://github.com/zdharma-continuum/zinit
 [Starship]: https://starship.rs
+[Topgrade]: https://github.com/topgrade-rs/topgrade
 [fzf-tab]: https://github.com/Aloxaf/fzf-tab

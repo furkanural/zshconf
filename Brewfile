@@ -8,5 +8,6 @@ brew "gh"         # GitHub CLI (ghopen, ghpr)
 brew "mise"       # runtime version manager
 brew "ripgrep"    # grep replacement (rgg, rgi, ...)
 brew "starship"   # prompt
+brew "topgrade"   # update orchestrator (sysup --topgrade)
 brew "vivid"      # LS_COLORS generator
 brew "zoxide"     # smarter cd (z)

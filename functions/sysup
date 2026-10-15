@@ -1,30 +1,115 @@
-# Update everything: config repo + brew + zinit + zcompdump. Each lane is independent.
+# Update everything: config repo + packages/plugins + completions.
+# Native (default): brew + zinit directly. Topgrade (opt-in: `sysup --topgrade`,
+# or SYSUP_BACKEND=topgrade in ~/.config/zsh/local.d/): plain `topgrade` with
+# its own defaults — customize it in ~/.config/topgrade.toml, not here.
 emulate -L zsh
 setopt extendedglob
 
+local backend="${SYSUP_BACKEND:-native}"
+case "${1:-}" in
+  --topgrade) backend=topgrade; shift ;;
+  --native)   backend=native; shift ;;
+  -h|--help)
+    print -r -- "usage: sysup [--native|--topgrade]"
+    print -r -- "  --native    update this repo, Homebrew, Zinit, completions (default)"
+    print -r -- "  --topgrade  update this repo, then everything Topgrade detects, then completions"
+    print -r -- "Set SYSUP_BACKEND=topgrade in ~/.config/zsh/local.d/ to make Topgrade the default."
+    print -r -- "Configure Topgrade itself in ~/.config/topgrade.toml."
+    return 0
+    ;;
+  '') ;;
+  *)
+    print -u2 -r -- "sysup: unknown option: $1"
+    print -u2 -r -- "usage: sysup [--native|--topgrade]"
+    return 2
+    ;;
+esac
+(( $# == 0 )) || { print -u2 -r -- "sysup: unexpected argument: $1"; return 2 }
+[[ "$backend" == (native|topgrade) ]] || {
+  print -u2 -r -- "sysup: unsupported SYSUP_BACKEND '$backend' (use native or topgrade)"
+  return 2
+}
+
+local -a results
+integer failed=0 rc
+
+# _sysup_lane <name>: record the exit status ($rc) of the lane just run.
+_sysup_lane() {
+  if (( rc )); then
+    results+=("$1: failed")
+    failed=1
+  else
+    results+=("$1: ok")
+  fi
+}
+
 # Config lane only once the repo has a remote to pull from.
 if [[ -n "${ZSHCONF:-}" ]] && git -C "$ZSHCONF" remote 2>/dev/null | grep -q .; then
-  zshconf-update
+  zshconf-update; rc=$?
+  _sysup_lane zshconf
   print
+else
+  results+=("zshconf: skipped (no remote)")
 fi
 
-print -P "%F{cyan}==> Homebrew packages...%f"
-brew update &&
-brew upgrade --greedy --yes &&
-brew cleanup &&
-brew autoremove
+if [[ "$backend" == topgrade ]]; then
+  # Topgrade owns Homebrew, Zinit, and every other tool it detects.
+  print -P "%F{cyan}==> Topgrade...%f"
+  if (( $+commands[topgrade] )); then
+    topgrade; rc=$?
+    _sysup_lane topgrade
+  else
+    print -P "%F{red}Topgrade is not installed.%f Install it (e.g. %F{yellow}brew install topgrade%f) or run %F{yellow}sysup --native%f."
+    results+=("topgrade: failed (not installed)")
+    failed=1
+  fi
+else
+  print -P "%F{cyan}==> Homebrew packages...%f"
+  if (( $+commands[brew] )); then
+    brew update &&
+    brew upgrade --greedy --yes &&
+    brew cleanup &&
+    brew autoremove; rc=$?
+    _sysup_lane homebrew
 
-brew doctor || print -P "%F{yellow}(brew doctor reported issues — review above)%f"
+    if brew doctor; then
+      results+=("brew doctor: ok")
+    else
+      print -P "%F{yellow}(brew doctor reported issues — review above)%f"
+      results+=("brew doctor: warning")
+    fi
+  else
+    print -P "%F{yellow}Homebrew not found; skipping.%f"
+    results+=("homebrew: skipped (not installed)")
+  fi
 
-print -P "\n%F{cyan}==> Zinit plugins...%f"
-zinit self-update
-zinit update --all
+  print -P "\n%F{cyan}==> Zinit plugins...%f"
+  if (( $+functions[zinit] )); then
+    zinit self-update &&
+    zinit update --all; rc=$?
+    _sysup_lane zinit
+  else
+    print -P "%F{yellow}Zinit not loaded; skipping.%f"
+    results+=("zinit: skipped (not loaded)")
+  fi
+fi
+unfunction _sysup_lane
 
 print -P "\n%F{cyan}==> Completion dump...%f"
 rm -f "${ZDOTDIR:-$HOME}"/.zcompdump*(N)
-
-_repair_clap_dynamic_completions
-
+(( $+functions[_repair_clap_dynamic_completions] )) && _repair_clap_dynamic_completions
 rehash
+results+=("completions: refreshed")
+
+print -P "\n%F{cyan}==> Summary%f"
+local result
+for result in $results; do
+  print -r -- "  $result"
+done
+
+if (( failed )); then
+  print -P "\n%F{red}==> Finished with failures.%f Review the output above."
+  return 1
+fi
 
 print -P "\n%F{green}==> Done.%f Run %F{yellow}exec zsh%f to refresh completions."
