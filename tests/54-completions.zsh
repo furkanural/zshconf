@@ -63,7 +63,11 @@ else
 fi
 kill $probe_pid 2>/dev/null
 
-if (( $+commands[rg] )) && [[ -n ${^fpath}/_rg(#qN) ]]; then
+# Same dirs the pty shell searches: T_BREW_FPATH + zsh's built-in default
+# (FPATH unset, as in t_complete). An array glob, not [[ -n ... ]]: a string
+# test is always true.
+rg_comp=(${^T_BREW_FPATH}/_rg(N) ${^${(f)"$(env -u FPATH zsh -fc 'print -l $fpath')"}}/_rg(N))
+if (( $+commands[rg] && $#rg_comp )); then
   t_complete 'rgg --hid'
   t_match "rgg reuses ripgrep options" "$screen" "*rgg --hidden*"
 else
