@@ -39,6 +39,7 @@ _repair_clap_dynamic_completions() {
   local watched=(
     "$ZSHCONF"/init.zsh
     "$ZSHCONF"/modules/**/*.zsh(N)
+    "$ZSHCONF"/completions/*(N)
     "$HOME/.local/share/zinit/completions"
     "$HOME/.cache/zinit/completions"
     "/opt/homebrew/share/zsh/site-functions"

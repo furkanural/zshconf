@@ -1,0 +1,8 @@
+#compdef sysup
+# Completion for sysup (functions/sysup). Options are mutually exclusive and
+# sysup takes no other arguments.
+
+_arguments -s \
+  '(- *)'{-h,--help}'[show usage]' \
+  '(--native --topgrade)--native[update this repo, Homebrew, Zinit, completions]' \
+  '(--native --topgrade)--topgrade[update this repo, then everything Topgrade detects]'

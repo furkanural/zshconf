@@ -25,9 +25,10 @@ path=(
 typeset -U path
 export PATH
 
-# ── FPATH  (user → brew → system; must precede zicompinit; blockf blocks plugin edits)
+# ── FPATH  (user → repo → brew → system; must precede zicompinit; blockf blocks plugin edits)
 fpath=(
   ${ZDOTDIR:-$HOME}/.zsh/completions(N)
+  $ZSHCONF/completions(N)                 # completers for this repo's functions (_sysup, …)
   /opt/homebrew/share/zsh/site-functions(N)
   /usr/local/share/zsh/site-functions(N)
   $fpath

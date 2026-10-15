@@ -13,7 +13,7 @@ staged=$(git diff --cached --name-only --diff-filter=ACM)
 for f in $staged; do
   [ -f "$f" ] || continue
   case "$f" in
-    *.zsh|install.sh|functions/*)
+    *.zsh|install.sh|functions/*|completions/*)
       if ! out=$(zsh -n "$f" 2>&1); then
         echo "FAIL: $f does not parse:"
         echo "$out" | sed 's/^/    /'

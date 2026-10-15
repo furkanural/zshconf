@@ -12,6 +12,7 @@ The design in one sentence: **a layered core that is sourced, never edited, with
         ├── modules/aliases/*.zsh          (by domain)
         ├── modules/os/{darwin,linux}.zsh  (the ONLY $OSTYPE dispatch)
         ├── functions/* → autoloaded       (one file per function)
+        ├── completions/_* → on fpath      (Tab completers for those functions)
         └── ~/.config/zsh/local.d/*.zsh    (overlay drop-ins, sourced LAST)
 ```
 
