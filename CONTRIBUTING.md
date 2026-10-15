@@ -16,7 +16,7 @@ If you're unsure which side of the line an idea falls on, open an issue first â€
 - Read `docs/ARCHITECTURE.md` first â€” load order in `init.zsh` is load-bearing, and each constraint is commented where it's enforced.
 - Feature detection over OS detection. `$OSTYPE` appears in exactly one place (the manifest's dispatch); OS conditionals inside generic modules will be asked to move to `modules/os/`.
 - Zinit idioms stay in `modules/plugins.zsh` (containment rule).
-- New user-facing functions: one file in `functions/`, autoload style (bare body, no wrapper).
+- New user-facing functions: one file in `functions/`, autoload style (bare body, no wrapper). If it takes options, add a `#compdef` completer as `completions/_<name>`.
 
 ## Tests
 

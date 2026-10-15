@@ -1,6 +1,6 @@
 # Cheat Sheet
 
-Every command, alias, function, and keybinding this config adds. Tools are feature-detected — anything whose tool isn't installed simply doesn't exist (install the full set with `brew bundle`).
+Every command, alias, function, and keybinding this config adds. Tools are feature-detected — anything whose tool isn't installed simply doesn't exist (install the full set with `brew bundle --file "$ZSHCONF/Brewfile"`).
 
 ## Navigation
 
@@ -101,6 +101,8 @@ Day-to-day aliases (`gst`, `gco`, `gp`, `gl`, …) come from the OMZ git plugin.
 | `Ctrl+U` / `Ctrl+D` (inside fzf) | Scroll preview half-page up/down |
 
 Tab completion opens an fzf menu with file previews (fzf-tab).
+
+This config's own functions complete too: `portkill`/`portprocess` list listening ports with their process (e.g. `3000 -- node`), `zshconf-edit` offers `pre`, `env`, and your `local.d` names, `killnamed` offers process names, `rgg` offers ripgrep's options, `cdl`/`mkcd` offer directories only, and `sysup`/`gbclean` offer their flags.
 
 ## Model presets
 

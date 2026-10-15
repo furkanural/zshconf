@@ -4,6 +4,8 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 
 ## Unreleased
 
+- Tab completion for `sysup` (`--native`, `--topgrade`, `--help`), from a new `completions/` directory on `fpath`.
+- Tab completion for more functions: `portkill`/`portprocess` (listening ports with their process), `zshconf-edit` (`pre`, `env`, existing drop-ins), `killnamed` (process names), `rgg` (ripgrep's options), `cdl`/`mkcd` (directories only), `gbclean` (`--force`, `--help`).
 - `zshconf-update` now refuses to pull when the repo has uncommitted edits (previously `--ff-only` only caught local commits, so edits to files upstream didn't touch survived silently).
 - `sysup` now skips missing Homebrew/Zinit cleanly, prints a per-lane summary, and returns nonzero on failures.
 - `sysup --topgrade` (or `SYSUP_BACKEND=topgrade`) runs plain `topgrade` with its own defaults, configured via `~/.config/topgrade.toml`. Topgrade added to the `Brewfile`.

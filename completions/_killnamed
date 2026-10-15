@@ -1,0 +1,4 @@
+#compdef killnamed
+# Completion for killnamed (functions/killnamed): running process names.
+
+(( CURRENT == 2 )) && _process_names -a
