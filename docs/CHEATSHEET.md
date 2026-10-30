@@ -43,6 +43,8 @@ Day-to-day aliases (`gst`, `gco`, `gp`, `gl`, …) come from the OMZ git plugin.
 | `ghpr` | Open the current branch's PR in the browser; creates a draft PR if none exists |
 | `gadog` | `git log --all --decorate --oneline --graph` — full graph, all branches |
 
+`git` is aliased to `noglob git`, so revisions like `HEAD^` and `@~2` work despite `EXTENDED_GLOB` (git expands pathspecs itself, so `git add *.js` matches recursively). Use `command git` to bypass.
+
 ## System & processes
 
 | Command | What it does |
@@ -90,6 +92,8 @@ Day-to-day aliases (`gst`, `gco`, `gp`, `gl`, …) come from the OMZ git plugin.
 | `dstop` | Pick container(s) to stop via fzf (Tab = multi-select) |
 | `drm` | Pick container(s) to remove via fzf |
 
+`docker` Tab completion is generated (`docker completion zsh`) into `~/.zsh/completions/_docker` when missing or older than the docker binary.
+
 ## fzf
 
 | Keybinding | What it does |
@@ -136,18 +140,21 @@ Emacs mode, plus:
 | Keys | What it does |
 |---|---|
 | `Alt+←` / `Alt+→` | Move by word |
-| `Ctrl+←` / `Ctrl+→` | Move by word |
+| `Ctrl+←` / `Ctrl+→` | Move by word (words stop at `/` and `=`) |
+| `Home` / `End` / `Delete` | Line start / end, delete char — bound for every common terminal encoding |
+| `Ctrl+X Ctrl+E` | Edit the command line in `$VISUAL`/`$EDITOR` |
 | `↑` / `↓` (or `Ctrl+P` / `Ctrl+N`) | History-substring search — type a prefix, then scroll matches |
 | `Ctrl+Space` | Accept autosuggestion |
 | `Ctrl+\` | Toggle autosuggestions (handy for screen sharing) |
 | `Alt+H` / `Alt+U` | `cd ~` / `cd ..` |
 | `Ctrl+U` / `Ctrl+K` | Kill to line start / end |
-| `Ctrl+W` / `Ctrl+Y` | Kill word backward / yank |
+| `Ctrl+W` / `Ctrl+Y` | Kill word backward (one path segment) / yank |
+| `Ctrl+S` / `Ctrl+Q` | Free for bindings — terminal flow control is off |
 | `Ctrl+L` | Clear screen |
 
 ## History & safety
 
-- 50k shared history with timestamps; duplicates and noise (`ls`, `cd`, `pwd`, …) filtered out; a leading space keeps a command out of history.
+- 100k shared history with timestamps (fcntl-locked); duplicates and noise (`ls`, `cd`, `pwd`, …) filtered out; a leading space keeps a command out of history.
 - `noclobber`: `>` won't overwrite files — use `>!` to force.
 - `rm *` waits 10 seconds before executing.
 - `!!` expansions are shown for confirmation before running.

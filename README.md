@@ -10,7 +10,7 @@ This is not a framework. There are no settings files and no option matrix — yo
 
 - **Completion, done properly** — fuzzy matching (case-insensitive → partial-word → substring), typo correction, [fzf-tab] menus with file previews, most-recent-first file sorting, per-command styling.
 - **Fast startup** — plugins load in three deferred tiers _after_ the first prompt paints; tool inits (`fzf`, `zoxide`) are cached; everything is byte-compiled in the background.
-- **Sane defaults** — 50k shared history with noise filtering, safe redirects (`noclobber`), `AUTO_PUSHD`, and a curated set of aliases and functions (`mkcd`, `portkill`, `gbclean`, `sysup`, …).
+- **Sane defaults** — 100k shared history with noise filtering, safe redirects (`noclobber`), `AUTO_PUSHD`, and a curated set of aliases and functions (`mkcd`, `portkill`, `gbclean`, `sysup`, …).
 - **Graceful degradation** — every optional tool (eza, fzf, bat, fd, ripgrep, zoxide, starship, vivid, mise) is feature-detected. Nothing breaks when one is missing; there's even a fallback prompt.
 - **macOS first-class, Linux supported** — macOS is where it's daily-driven; Linux is CI-tested on every push.
 

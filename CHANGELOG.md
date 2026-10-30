@@ -4,6 +4,18 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 
 ## Unreleased
 
+- **Faster startup on macOS (~190 → ~135 ms):** Linuxbrew candidate paths no longer trigger the `/home` autofs automounter (~50 ms per shell).
+- **Faster prompts (~20 ms less per prompt):** zsh-autosuggestions no longer re-wraps every widget on each prompt (`ZSH_AUTOSUGGEST_MANUAL_REBIND`, bound once after each relevant tier). Suggestions skip lines over 40 chars and history entries over 80.
+- PATH entries inherited from the parent process (Ghostty, nix, editor terminals) are kept, after this config's own entries. Previously they were dropped.
+- `git log HEAD^` and friends work: `git` is aliased to `noglob git` (`EXTENDED_GLOB` made `^` a glob).
+- Home / End / Delete keys bound for every common terminal encoding (previously garbage under ssh/tmux/some `$TERM`s); `↑`/`↓` history-substring search also in application cursor mode.
+- `Ctrl+X Ctrl+E` edits the command line in your editor. Word motion/deletion (`Ctrl+W`, `Alt+←`) stops at `/` and `=`.
+- Options: `HIST_FCNTL_LOCK`, `HIST_EXPIRE_DUPS_FIRST`, `NO_FLOW_CONTROL` (`Ctrl+S`/`Ctrl+Q` no longer freeze the terminal), `COMBINING_CHARS`.
+- `docker` Tab completion, generated in the background when missing or stale.
+- Linux: Linuxbrew's zsh completions are on `fpath`. Heroku autocomplete cache found under XDG too.
+- bat man pages: `MANROFFOPT=-c` fixes garbled output with groff ≥ 1.23.
+- fzf-tab: directory preview for `z` too. Zinit bootstrap pin bumped to v3.17.1.
+
 - Tab completion for `sysup` (`--native`, `--topgrade`, `--help`), from a new `completions/` directory on `fpath`.
 - Tab completion for more functions: `portkill`/`portprocess` (listening ports with their process), `zshconf-edit` (`pre`, `env`, existing drop-ins), `killnamed` (process names), `rgg` (ripgrep's options), `cdl`/`mkcd` (directories only), `gbclean` (`--force`, `--help`).
 - `zshconf-update` now refuses to pull when the repo has uncommitted edits (previously `--ff-only` only caught local commits, so edits to files upstream didn't touch survived silently).
