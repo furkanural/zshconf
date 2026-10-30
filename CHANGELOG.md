@@ -5,7 +5,7 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 ## Unreleased
 
 - **Faster startup on macOS (~190 → ~135 ms):** Linuxbrew candidate paths no longer trigger the `/home` autofs automounter (~50 ms per shell).
-- **Faster prompts (~20 ms less per prompt):** zsh-autosuggestions no longer re-wraps every widget on each prompt (`ZSH_AUTOSUGGEST_MANUAL_REBIND`, bound once after each relevant tier). Suggestions skip lines over 40 chars and history entries over 80.
+- **Faster prompts (~20 ms less per prompt):** zsh-autosuggestions no longer re-wraps every widget on each prompt (`ZSH_AUTOSUGGEST_MANUAL_REBIND`, bound once after each relevant tier). Suggestion lookups stop once the line exceeds 200 chars (pasted text).
 - PATH entries inherited from the parent process (Ghostty, nix, editor terminals) are kept, after this config's own entries. Previously they were dropped.
 - `git log HEAD^` and friends work: `git` is aliased to `noglob git` (`EXTENDED_GLOB` made `^` a glob).
 - Home / End / Delete keys bound for every common terminal encoding (previously garbage under ssh/tmux/some `$TERM`s); `↑`/`↓` history-substring search also in application cursor mode.

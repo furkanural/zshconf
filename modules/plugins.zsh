@@ -50,8 +50,7 @@ _history_substring_search_setup() {
 # plugins document), and once more after the last tier (_autosuggest_rebind)
 # to pick up widgets that later tiers define (fzf's Ctrl+R/Ctrl+T, …).
 typeset -g ZSH_AUTOSUGGEST_MANUAL_REBIND=1
-typeset -g ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=40          # skip suggesting for long/pasted lines
-typeset -g ZSH_AUTOSUGGEST_HISTORY_IGNORE='?(#c80,)'   # never suggest 80+ char history entries
+typeset -g ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=200         # no suggestion lookups for pasted walls of text
 
 # Bound to zsh-autosuggestions via Tier 2 atload; self-deletes.
 _autosuggest_setup() {
