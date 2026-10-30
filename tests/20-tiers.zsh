@@ -7,7 +7,7 @@ t_make_zdot "$TWORK/zdot"
 mkdir -p "$TWORK/xdg"
 
 out=$(t_boot_tiers "$TWORK/zdot" "$TWORK/xdg" '
-print -r -- "AS precmd=${precmd_functions[(I)_zsh_autosuggest_start]} fsh=${+functions[-fast-highlight-process]} selfins=$widgets[self-insert] rebindleft=${+functions[_autosuggest_rebind]}"
+print -r -- "AS precmd=${${precmd_functions[(Ie)_zsh_autosuggest_start]}:-0} fsh=${+functions[-fast-highlight-process]} selfins=$widgets[self-insert] rebindleft=${+functions[_autosuggest_rebind]}"
 print -r -- "TIERS compinit=${+functions[compdef]} fzftab=${+functions[fzf-tab-complete]} autosuggest=${+functions[_zsh_autosuggest_start]} gst=${+aliases[gst]} hss=$(bindkey "^[[A") ctrlbs=$(bindkey "^\\") ctrlright=$(bindkey "^[[1;5C") ctrlf=$(bindkey "^F" 2>/dev/null) hasfzf=${+commands[fzf]} dump=$([[ -f $ZDOTDIR/.zcompdump ]]; echo $(( ! $? )))"
 ')
 line="$(grep '^TIERS ' <<< "$out")"
