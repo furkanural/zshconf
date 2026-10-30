@@ -4,7 +4,9 @@ HISTSIZE=100000
 SAVEHIST=100000
 
 setopt SHARE_HISTORY              # implies INC_APPEND_HISTORY
+setopt HIST_FCNTL_LOCK            # fcntl locking: safer + faster with many shells writing
 setopt EXTENDED_HISTORY           # timestamp + duration
+setopt HIST_EXPIRE_DUPS_FIRST     # when trimming, drop dups before unique entries
 setopt HIST_IGNORE_ALL_DUPS       # drops all older dups
 setopt HIST_SAVE_NO_DUPS
 setopt HIST_FIND_NO_DUPS
@@ -66,5 +68,7 @@ setopt CHECK_JOBS
 
 # Quality of life
 setopt NO_BEEP
+setopt NO_FLOW_CONTROL                # free Ctrl+S / Ctrl+Q (no terminal freeze)
+setopt COMBINING_CHARS                # render combining accents (macOS sets it; Linux doesn't)
 setopt PATH_DIRS                      # path search for commands containing /
 setopt MAGIC_EQUAL_SUBST              # --prefix=<TAB> completes paths
