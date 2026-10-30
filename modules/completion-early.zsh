@@ -40,6 +40,7 @@ _repair_clap_dynamic_completions() {
     "$ZSHCONF"/init.zsh
     "$ZSHCONF"/modules/**/*.zsh(N)
     "$ZSHCONF"/completions/*(N)
+    "$zdot/.zsh/completions"                    # user/generated completers (e.g. _docker)
     "$HOME/.local/share/zinit/completions"
     "$HOME/.cache/zinit/completions"
     "/opt/homebrew/share/zsh/site-functions"

@@ -84,10 +84,12 @@ unset _zshconf_f
 
 # ── Auto-compile (background-rebuild stale bytecode; `source` only uses a
 #    .zwc that is at least as new as its source, so stale bytecode is
-#    silently ignored, never wrongly used)
+#    silently ignored, never wrongly used). One fork covers both the modules
+#    and the completion dump (which Tier 1's compinit reads next startup).
 {
-  for _zshconf_f in "$ZSHCONF"/init.zsh "$ZSHCONF"/modules/**/*.zsh(.N); do
-    if [[ ! -f "$_zshconf_f.zwc" || "$_zshconf_f" -nt "$_zshconf_f.zwc" ]]; then
+  for _zshconf_f in "$ZSHCONF"/init.zsh "$ZSHCONF"/modules/**/*.zsh(.N) \
+                    "${ZDOTDIR:-$HOME}"/.zcompdump(.N); do
+    if [[ -s "$_zshconf_f" && ( ! -f "$_zshconf_f.zwc" || "$_zshconf_f" -nt "$_zshconf_f.zwc" ) ]]; then
       zcompile "$_zshconf_f" 2>/dev/null
     fi
   done

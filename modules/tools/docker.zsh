@@ -7,6 +7,23 @@ if (( $+commands[docker] )); then
   alias dlogs='docker logs -f'
   alias dsh='docker exec -it'
 
+  # Tab completion: Docker Desktop / colima installs don't always ship a zsh
+  # completer. Generate one into the user completions dir (on fpath, watched
+  # by the compdump hygiene pass) when missing or older than the binary —
+  # in the background, so it costs nothing at startup; it takes effect on
+  # the next shell.
+  () {
+    local comp="${ZDOTDIR:-$HOME}/.zsh/completions/_docker"
+    local bin="${commands[docker]:A}"
+    [[ -s "$comp" && ! "$bin" -nt "$comp" ]] && return
+    {
+      command mkdir -p "${comp:h}"
+      command docker completion zsh >| "$comp.tmp" 2>/dev/null \
+        && [[ -s "$comp.tmp" ]] && command mv -f "$comp.tmp" "$comp"
+      command rm -f "$comp.tmp"
+    } &!
+  }
+
   # Pick container(s) to stop via fzf (Tab = multi-select).
   dstop() {
     _need fzf || return
