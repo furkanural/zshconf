@@ -5,6 +5,7 @@ SAVEHIST=100000
 
 setopt SHARE_HISTORY              # implies INC_APPEND_HISTORY
 setopt HIST_FCNTL_LOCK            # fcntl locking: safer + faster with many shells writing
+                                  # (zshoptions(1): may misbehave on NFS/sshfs $HOME — unsetopt in local.d there)
 setopt EXTENDED_HISTORY           # timestamp + duration
 setopt HIST_EXPIRE_DUPS_FIRST     # when trimming, drop dups before unique entries
 setopt HIST_IGNORE_ALL_DUPS       # drops all older dups

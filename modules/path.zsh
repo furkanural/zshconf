@@ -6,9 +6,13 @@ export PNPM_HOME="${PNPM_HOME:-$HOME/Library/pnpm}"
 # an autofs mount (auto_home), and a LITERAL path lookup under it blocks on
 # directory services for ~50 ms every startup. A bracket glob readdir()s
 # instead and returns instantly. Never "simplify" it back to a literal.
-# Inherited entries ($path, last) survive — e.g. the dirs a terminal (Ghostty),
-# nix, or an editor's integrated terminal added — but never outrank ours;
-# typeset -U keeps the first occurrence.
+# Inherited entries ($path, last) survive — e.g. the dirs a terminal (Ghostty)
+# or an editor's integrated terminal appended — but never outrank ours;
+# typeset -U keeps the first occurrence. Consequence: a tool env that
+# PREPENDED to PATH before spawning this shell (nix-shell --run zsh, a venv
+# subshell) keeps its dir on PATH but loses precedence to Homebrew's binary.
+# Deliberate: honouring arbitrary parent order would let macOS's path_helper
+# or a stray /usr/local/bin jump ahead of /opt/homebrew/bin.
 path=(
   $ANDROID_HOME/emulator(N)
   $ANDROID_HOME/platform-tools(N)

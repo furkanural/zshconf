@@ -42,13 +42,16 @@ _history_substring_search_setup() {
   unset -f _history_substring_search_setup
 }
 
-# ── zsh-autosuggestions settings (read at call time; overlay can override)
+# ── zsh-autosuggestions settings (read when the plugin loads in Tier 2, so
+# an overlay can override them from local.d)
 # MANUAL_REBIND: by default the plugin re-wraps EVERY zle widget on every
 # precmd — with fast-syntax-highlighting's wrappers that is ~600 widgets,
 # ~20 ms per prompt. We bind once when Tier 2 loads (fsh is loaded before it
 # in the same tier, so autosuggest wraps fsh's wrappers — the order both
-# plugins document), and once more after the last tier (_autosuggest_rebind)
-# to pick up widgets that later tiers define (fzf's Ctrl+R/Ctrl+T, …).
+# plugins document), and once more after Tier 3 (_autosuggest_rebind) to
+# pick up widgets that tool inits define in between (fzf's Ctrl+R/Ctrl+T, …).
+# The plugin tests ${+ZSH_AUTOSUGGEST_MANUAL_REBIND} (existence): to get
+# per-prompt rebinding back, `unset` it — setting it to 0 does nothing.
 typeset -g ZSH_AUTOSUGGEST_MANUAL_REBIND=1
 typeset -g ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=200         # no suggestion lookups for pasted walls of text
 
@@ -60,8 +63,8 @@ _autosuggest_setup() {
   unset -f _autosuggest_setup
 }
 
-# Bound to the last tier's atload: one rebind so widgets created by later
-# tiers (fzf-init, zoxide, OMZ plugins) are wrapped too; self-deletes.
+# Bound to Tier 3's last atload: one rebind so widgets created after the
+# Tier 2 bind (fzf-init, zoxide, OMZ plugins) are wrapped too; self-deletes.
 _autosuggest_rebind() {
   (( $+functions[_zsh_autosuggest_bind_widgets] )) && _zsh_autosuggest_bind_widgets
   unset -f _autosuggest_rebind
@@ -105,7 +108,9 @@ zinit wait'0b' lucid for \
     zsh-users/zsh-autosuggestions
 
 # Tier 3 (1): rarely needed in first second. (git-auto-fetch removed — noisy on flaky nets.)
-# Last plugin carries the final autosuggest rebind (see MANUAL_REBIND above).
+# Last plugin carries the final autosuggest rebind (see MANUAL_REBIND above);
+# zinit runs a non-`!` atload after the snippet returns, so it fires even
+# when eza is absent and OMZP::eza bails out early.
 zinit wait'1' lucid for \
   OMZP::docker-compose \
   OMZP::command-not-found \

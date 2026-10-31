@@ -19,10 +19,14 @@ if (( $+commands[docker] )); then
   #  - A docker without `completion zsh` leaves a dot-prefixed marker naming
   #    the binary that failed, so we don't retry on every shell; a different
   #    or newer binary (an upgrade, a switch to Docker Desktop/colima) retries.
+  #  - Skipped entirely when a packaged _docker already sits on fpath
+  #    (Homebrew formula, docker-ce-cli): no point shadowing it.
   () {
     local comp="${ZDOTDIR:-$HOME}/.zsh/completions/_docker"
     local bin="${commands[docker]:A}"
     [[ -s "$comp" && ! "$bin" -nt "$comp" ]] && return
+    local -a packaged=( ${^fpath:#${comp:h}}/_docker(N) )
+    (( $#packaged )) && return
     local nope="${comp:h}/.${comp:t}.unsupported"
     [[ -e "$nope" && ! "$bin" -nt "$nope" && "$(<$nope)" == "$bin" ]] && return
     {
