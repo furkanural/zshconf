@@ -58,6 +58,7 @@ typeset -g ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=200         # no suggestion lookups f
 # Bound to zsh-autosuggestions via Tier 2 atload; self-deletes.
 _autosuggest_setup() {
   _zsh_autosuggest_start                 # binds widgets; with MANUAL_REBIND drops its precmd hook
+  bindkey '^ ' autosuggest-accept        # Ctrl+Space (Shift+Tab left to back-tab)
   bindkey '^\' autosuggest-toggle        # Ctrl+\ — handy for screen sharing
 
   unset -f _autosuggest_setup

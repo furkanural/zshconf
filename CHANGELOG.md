@@ -4,6 +4,7 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 
 ## Unreleased
 
+- Fix: `zsh-syntax-highlighting: unhandled ZLE widget 'autosuggest-accept'` printed on every start since the Tier 2 reorder — `Ctrl+Space` was bound before the widget existed; it is now bound alongside `Ctrl+\` once autosuggestions load. The tier test asserts a clean stderr from plugins.
 - **Faster startup on macOS (~190 → ~135 ms):** Linuxbrew candidate paths no longer trigger the `/home` autofs automounter (~50 ms per shell).
 - **Faster prompts (~20 ms less per prompt):** zsh-autosuggestions no longer re-wraps every widget on each prompt (`ZSH_AUTOSUGGEST_MANUAL_REBIND`, bound once after each relevant tier). Suggestion lookups stop once the line exceeds 200 chars (pasted text).
 - PATH entries inherited from the parent process (Ghostty, nix, editor terminals) are kept, after this config's own entries. Previously they were dropped.

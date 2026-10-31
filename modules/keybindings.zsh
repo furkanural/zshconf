@@ -41,4 +41,8 @@ bindkey '^X^E' edit-command-line
 bindkey -s '^[h' '^Ucd ~\n'             # Alt+H → cd ~
 bindkey -s '^[u' '^Ucd ..\n'            # Alt+U → cd ..
 
-bindkey '^ '   autosuggest-accept       # Ctrl+Space (Shift+Tab left to back-tab)
+# Ctrl+Space → autosuggest-accept and Ctrl+\ → autosuggest-toggle live in
+# plugins.zsh (_autosuggest_setup), bound once the widgets exist. Binding a
+# not-yet-defined widget here creates an empty $widgets entry that
+# fast-syntax-highlighting — which now loads before autosuggestions — walks
+# and reports as "unhandled ZLE widget 'autosuggest-accept'" on every start.
