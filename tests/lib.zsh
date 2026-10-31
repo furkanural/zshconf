@@ -55,7 +55,8 @@ t_boot() {
 
 # t_boot_tiers <zdot> <xdg> <probe>: interactive boot fed prompt cycles so
 # zinit's turbo tiers fire, then runs the probe. stderr contains prompt
-# paints + the no-TTY zle artifact; don't assert on it here.
+# paints + the no-TTY zle artifact, so never assert it is empty — only
+# that it lacks a specific plugin complaint (t_nomatch on a substring).
 # 45 cycles: piped, zinit loads roughly one turbo item per prompt, and
 # Tier 3 (wait'1', six snippets) needs well over 30 to drain.
 t_boot_tiers() {

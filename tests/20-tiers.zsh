@@ -8,7 +8,7 @@ mkdir -p "$TWORK/xdg"
 
 out=$(t_boot_tiers "$TWORK/zdot" "$TWORK/xdg" '
 print -r -- "AS precmd=${${precmd_functions[(Ie)_zsh_autosuggest_start]}:-0} fsh=${+functions[-fast-highlight-process]} selfins=$widgets[self-insert] rebindleft=${+functions[_autosuggest_rebind]}"
-print -r -- "TIERS compinit=${+functions[compdef]} fzftab=${+functions[fzf-tab-complete]} autosuggest=${+functions[_zsh_autosuggest_start]} gst=${+aliases[gst]} hss=$(bindkey "^[[A") ctrlbs=$(bindkey "^\\") ctrlright=$(bindkey "^[[1;5C") ctrlf=$(bindkey "^F" 2>/dev/null) hasfzf=${+commands[fzf]} dump=$([[ -f $ZDOTDIR/.zcompdump ]]; echo $(( ! $? )))"
+print -r -- "TIERS compinit=${+functions[compdef]} fzftab=${+functions[fzf-tab-complete]} autosuggest=${+functions[_zsh_autosuggest_start]} gst=${+aliases[gst]} hss=$(bindkey "^[[A") ctrlbs=$(bindkey "^\\") ctrlspace=$(bindkey "^ ") ctrlright=$(bindkey "^[[1;5C") ctrlf=$(bindkey "^F" 2>/dev/null) hasfzf=${+commands[fzf]} dump=$([[ -f $ZDOTDIR/.zcompdump ]]; echo $(( ! $? )))"
 ')
 line="$(grep '^TIERS ' <<< "$out")"
 
@@ -18,6 +18,10 @@ t_match "tier 2: autosuggestions loaded"      "$line" "*autosuggest=1*"
 t_match "tier 2: OMZ git aliases landed"      "$line" "*gst=1*"
 t_match "tier 2: history-substring-search bound" "$line" "*history-substring-search-up*"
 t_match "tier 2: autosuggest-toggle bound (Ctrl+\\)" "$line" "*ctrlbs=*autosuggest-toggle*"
+t_match "tier 2: autosuggest-accept bound (Ctrl+Space)" "$line" "*ctrlspace=*autosuggest-accept*"
+# A bindkey to a widget that doesn't exist yet leaves an empty $widgets entry
+# that fsh (loaded first) reports as "unhandled ZLE widget" on every start.
+t_nomatch "no plugin complaints on stderr"   "$(cat -- "$TWORK/stderr-tiers")" "*unhandled ZLE widget*"
 t_match "Ctrl+Right word jump bound"          "$line" "*ctrlright=*forward-word*"
 if [[ "$line" == *hasfzf=1* ]]; then
   t_match "Ctrl+F no-hidden picker bound"     "$line" "*ctrlf=*_fzf_file_no_hidden*"
