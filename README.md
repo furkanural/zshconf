@@ -10,7 +10,7 @@ This is not a framework. There are no settings files and no option matrix — yo
 
 - **Completion, done properly** — fuzzy matching (case-insensitive → partial-word → substring), typo correction, [fzf-tab] menus with file previews, most-recent-first file sorting, per-command styling.
 - **Fast startup** — plugins load in three deferred tiers _after_ the first prompt paints; tool inits (`fzf`, `zoxide`) are cached; everything is byte-compiled in the background.
-- **Sane defaults** — 50k shared history with noise filtering, safe redirects (`noclobber`), `AUTO_PUSHD`, and a curated set of aliases and functions (`mkcd`, `portkill`, `gbclean`, `sysup`, …).
+- **Sane defaults** — 100k shared history with noise filtering, safe redirects (`noclobber`), `AUTO_PUSHD`, and a curated set of aliases and functions (`mkcd`, `portkill`, `gbclean`, `sysup`, …).
 - **Graceful degradation** — every optional tool (eza, fzf, bat, fd, ripgrep, zoxide, starship, vivid, mise) is feature-detected. Nothing breaks when one is missing; there's even a fallback prompt.
 - **macOS first-class, Linux supported** — macOS is where it's daily-driven; Linux is CI-tested on every push.
 
@@ -58,7 +58,7 @@ The repo passes no Topgrade config — tool defaults apply, and you tune it in y
 
 All personal and machine-specific config lives in `${XDG_CONFIG_HOME:-~/.config}/zsh/`, outside this repo:
 
-- **`local.d/*.zsh`** — drop-in files, sourced _after_ everything in the repo, in name order. Override anything: re-export variables, re-alias, redefine functions, re-set zstyles, add your own `zinit` plugins. One concern per file (`editor.zsh`, `work.zsh`, …).
+- **`local.d/*.zsh`** — drop-in files, sourced _after_ everything in the repo, in name order. Override anything: re-export variables, re-alias, redefine functions, re-set zstyles, add your own `zinit` plugins. One concern per file (`editor.zsh`, `work.zsh`, …). One subtlety: if a plugin you add with `wait'1'` or later defines zle widgets, call `_zsh_autosuggest_bind_widgets` in its `atload` so autosuggestions track them — or `unset ZSH_AUTOSUGGEST_MANUAL_REBIND` to get the plugin's per-prompt rebinding back (see [Architecture → turbo tiers](docs/ARCHITECTURE.md#the-turbo-tiers)).
 - **`env.zsh`** — exports that GUI apps must see belong here, not in `local.d`: Zed, VS Code and friends read the environment of a **login shell** (`.zprofile`), which never runs `~/.zshrc`. `env.zsh` is sourced from `~/.zprofile` (wired by the installer) _and_ from `init.zsh`, with a guard so it runs once. Keep it env-only — non-interactive shells source it.
 - **`pre.zsh`** — sourced _before_ the core. Only needed for values the core consumes during startup (e.g. `LS_COLORS`). When in doubt, use `local.d`.
 

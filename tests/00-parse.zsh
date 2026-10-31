@@ -11,4 +11,9 @@ for f in "$REPO"/init.zsh "$REPO"/modules/**/*.zsh(.) "$REPO"/functions/*(.) "$R
   fi
 done
 (( T_FAIL )) || print -r -- "  ok: all files parse"
+
+# A literal /home/linuxbrew lookup triggers macOS's autofs automounter
+# (~50 ms per startup); the startup path must use the /home/[l]inuxbrew glob.
+hits=$(grep -n '/home/linuxbrew' "$REPO"/init.zsh "$REPO"/modules/**/*.zsh(.) | grep -v '^[^:]*:[0-9]*:[[:space:]]*#')
+t_eq "no literal /home/linuxbrew in startup files (autofs)" "$hits" ""
 t_done

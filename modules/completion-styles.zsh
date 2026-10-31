@@ -2,7 +2,7 @@
 zstyle ':completion:*:git-checkout:*' sort false
 
 # Preview panes
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:(cd|z|__zoxide_z):*' fzf-preview 'eza -1 --color=always $realpath'
 zstyle ':fzf-tab:complete:(cat|bat|less|vim|nvim|code|zed):*' \
   fzf-preview 'bat --color=always --style=numbers --line-range=:500 $realpath 2>/dev/null || eza -1 --color=always $realpath'
 
@@ -12,13 +12,7 @@ zstyle ':fzf-tab:*' continuous-trigger '/'       # drill deeper via /
 zstyle ':fzf-tab:*' fzf-flags '--color=fg:-1,bg:-1,hl:#5fff87,fg+:#ffff87,bg+:#3a3a3a,hl+:#ffaf5f'
 
 # ── Completion system  (debug a press: Ctrl+X h)
-
-# Background-compile the dump for the next startup.
-{
-  if [[ -s "${ZDOTDIR:-$HOME}/.zcompdump" && (! -s "${ZDOTDIR:-$HOME}/.zcompdump.zwc" || "${ZDOTDIR:-$HOME}/.zcompdump" -nt "${ZDOTDIR:-$HOME}/.zcompdump.zwc") ]]; then
-    zcompile "${ZDOTDIR:-$HOME}/.zcompdump"
-  fi
-} &!
+# (The dump is byte-compiled for the next startup by init.zsh's background pass.)
 
 [[ -d "${ZDOTDIR:-$HOME}/.zsh/cache" ]] || mkdir -p "${ZDOTDIR:-$HOME}/.zsh/cache"
 

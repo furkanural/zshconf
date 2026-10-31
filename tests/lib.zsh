@@ -56,8 +56,10 @@ t_boot() {
 # t_boot_tiers <zdot> <xdg> <probe>: interactive boot fed prompt cycles so
 # zinit's turbo tiers fire, then runs the probe. stderr contains prompt
 # paints + the no-TTY zle artifact; don't assert on it here.
+# 45 cycles: piped, zinit loads roughly one turbo item per prompt, and
+# Tier 3 (wait'1', six snippets) needs well over 30 to drain.
 t_boot_tiers() {
-  { for _ in {1..30}; do print 'sleep 0.3'; done
+  { for _ in {1..45}; do print 'sleep 0.3'; done
     print -r -- "$3"
     print 'exit'
   } | ZDOTDIR="$1" XDG_CONFIG_HOME="$2" zsh -i 2>"$TWORK/stderr-tiers"

@@ -35,9 +35,13 @@ Modules are sourced at **top level**, never inside a function — `typeset -U pa
 
 All plugins load via Zinit's turbo mode, _after_ the first prompt paints:
 
-- **Tier 0a** — anything needed before the first Tab press: compinit (`-C`, trusting the compdump the hygiene pass validated), completions, fzf-tab.
-- **Tier 0b** — interactive UX: OMZ git lib/aliases, history-substring search, autosuggestions, syntax highlighting.
-- **Tier 1** — everything that can wait a second: docker-compose, ruby, rails, extract, eza, command-not-found.
+Tiers are numbered 1–3 everywhere (code comments, tests, this doc); the zinit `wait` value is in parentheses.
+
+- **Tier 1** (`wait'0a'`) — anything needed before the first Tab press: compinit (`-C`, trusting the compdump the hygiene pass validated), completions, fzf-tab.
+- **Tier 2** (`wait'0b'`) — interactive UX: OMZ git lib/aliases, history-substring search, syntax highlighting, then autosuggestions (in that order — see below).
+- **Tier 3** (`wait'1'`) — everything that can wait a second: docker-compose, ruby, rails, extract, eza, command-not-found. The last one carries the final autosuggest rebind.
+
+**Autosuggest binding:** by default zsh-autosuggestions re-wraps every zle widget on every precmd; with fast-syntax-highlighting's wrappers that is ~600 widgets and ~20 ms per prompt. We set `ZSH_AUTOSUGGEST_MANUAL_REBIND` (the plugin tests for the variable's *existence*, so an overlay that wants per-prompt rebinding must `unset` it — `=0` is not enough) and bind exactly twice: when Tier 2 loads (fsh is already loaded, so autosuggest wraps outermost — the order both plugins document), and after Tier 3 (`_autosuggest_rebind`) so widgets that tool inits define in between (fzf's `Ctrl+R`/`Ctrl+T`, zoxide) are wrapped too. Widgets defined at source time (keybindings.zsh, tools/*, `local.d`) all exist before any tier fires, so they are covered. Only widgets created *after* that final rebind are missed — in practice a plugin registered from `local.d` with `wait'1'` or later; give it `atload'_zsh_autosuggest_bind_widgets'`.
 
 Deferred loading has a subtle consequence the overlay exploits: overlay zstyles set at source time still land _before_ Tier 2/3 plugins read them.
 
@@ -58,6 +62,10 @@ Deferred loading has a subtle consequence the overlay exploits: overlay zstyles 
 ## OS support
 
 Tiered: macOS is first-class (daily-driven); Linux is supported and CI-tested; WSL should behave like Linux (untested); BSD is out of scope. The mechanism: **feature detection over OS detection** — candidate paths with `(N)` glob qualifiers, `$+commands` guards, `col(1)` detection — and a single `$OSTYPE` dispatch in the manifest selecting one leaf module (`modules/os/`). OS conditionals inside generic modules are a review reject.
+
+One feature-detection trap: on macOS `/home` is an autofs mount, and a **literal** path lookup under it (`/home/linuxbrew/...(N)`) blocks on directory services for ~50 ms on every startup. Linuxbrew candidates are therefore written as a bracket glob, `/home/[l]inuxbrew/...(N)`, which `readdir`s instead and returns instantly. The parse test rejects a literal `/home/linuxbrew` in startup files.
+
+PATH is ours first, inherited second: the `path=(...)` list ends with the inherited `$path`, so entries a terminal (Ghostty) or an editor's integrated terminal appended survive, but `typeset -U` keeps our ordering for anything both define. The flip side: a tool environment that *prepended* to PATH before spawning this shell (`nix-shell --run zsh`, a venv subshell) keeps its directory on PATH but does not outrank Homebrew's copy of the same binary. Tools that modify the running shell (`mise`, `direnv`, `venv activate`) are unaffected — they run after `path.zsh`.
 
 ## Testing
 

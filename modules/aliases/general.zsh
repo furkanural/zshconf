@@ -17,4 +17,10 @@ if ! (( $+commands[eza] )); then
 fi
 
 # ── Aliases: git  (gst/gco/gp/glog come from OMZP::git)
+# noglob: with EXTENDED_GLOB, `git log HEAD^` / `git show @~2` die with "no
+# matches found" before git runs. git expands pathspecs itself — note that
+# makes `git add *.js` recursive (git's pathspec semantics), which is
+# usually what you want. Alias expansion is recursive, so OMZ's gst/gco/…
+# get it too. Bypass with `command git` or `\git`.
+alias git='noglob git'
 alias gadog='git log --all --decorate --oneline --graph'  # glog + all branches
