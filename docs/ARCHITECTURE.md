@@ -14,6 +14,9 @@ The design in one sentence: **a layered core that is sourced, never edited, with
         ├── functions/* → autoloaded       (one file per function)
         ├── completions/_* → on fpath      (Tab completers for those functions)
         └── ~/.config/zsh/local.d/*.zsh    (overlay drop-ins, sourced LAST)
+
+~/.bash_profile (1-line stub, user-owned)
+  └── $ZSHCONF/bash-login.sh (PATH for login bash: brew + mise shims)
 ```
 
 ## Load order is load-bearing
@@ -54,7 +57,7 @@ Deferred loading has a subtle consequence the overlay exploits: overlay zstyles 
 - **Starship config:** explicit `$STARSHIP_CONFIG` → user's `~/.config/starship.toml` → repo default. No starship → minimal fallback `PS1`.
 - **Overlay:** `pre.zsh` (before core; startup-consumed values only) → core → `local.d/*.zsh` in name order (winner takes all). Only values the core reads during startup need `pre.zsh`; everything else overrides fine from `local.d` because it's read at call time.
 - **Env seam:** `env.zsh` is sourced from `~/.zprofile` (wired by `install.sh`) so login shells get it — including the login shell GUI apps like Zed and VS Code spawn to read your environment — and from `init.zsh` so non-login interactive shells get it too. A `ZSHCONF_ENV_SOURCED` guard keeps login+interactive shells from running it twice. Env-only: non-interactive shells source it.
-- **Login-bash seam:** `install.sh` also appends a marked, POSIX-sh block to the file login bash reads (`~/.bash_profile`, else `~/.bash_login`, else `~/.profile`). Rationale: agent tools and editors run hooks via `bash -lc`, and on macOS `/etc/profile`'s `path_helper` re-prepends `/usr/bin` to the inherited PATH, so system Ruby/Python shadow mise and Homebrew even though the parent zsh had them first. The block re-runs `brew shellenv` and `mise activate bash --shims` (shim mode: a non-interactive shell never reaches the prompt hook full activation needs). It never touches zsh; `path.zsh` remains the single PATH authority for zsh.
+- **Login-bash seam:** `install.sh` also appends a marked one-line stub to the file login bash reads (`~/.bash_profile`, else `~/.bash_login`, else `~/.profile`) that sources `$ZSHCONF/bash-login.sh` — the same stub-vs-logic split as `~/.zshrc`/`init.zsh`, so the logic updates with the repo. Rationale: agent tools and editors run hooks via `bash -lc`, and on macOS `/etc/profile`'s `path_helper` re-prepends `/usr/bin` to the inherited PATH, so system Ruby/Python shadow mise and Homebrew even though the parent zsh had them first. `bash-login.sh` (POSIX sh) re-runs `brew shellenv` and `mise activate bash --shims` (shim mode: a non-interactive shell never reaches the prompt hook full activation needs). It carries no PATH list of its own and never touches zsh; `path.zsh` remains the single PATH authority.
 
 ## Bytecode
 

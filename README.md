@@ -27,7 +27,7 @@ cd ~/.local/share/zshconf
 exec zsh
 ```
 
-The installer does five things, idempotently: backs up any existing `~/.zshrc` (to `~/.zshrc.pre-zshconf`), writes a 3-line stub that sources this repo, appends a marked block to `~/.zprofile` that sources the env overlay (existing content like `brew shellenv` is kept), appends a marked block to `~/.bash_profile` (or `~/.profile` if that is what you have) so login **bash** gets Homebrew and mise on PATH too, and creates the overlay directory. It does **not** install tools, touch your existing prompt config, or migrate anything. First startup clones Zinit (pinned to a release tag) and the plugins; later startups are fast.
+The installer does five things, idempotently: backs up any existing `~/.zshrc` (to `~/.zshrc.pre-zshconf`), writes a 3-line stub that sources this repo, appends a marked block to `~/.zprofile` that sources the env overlay (existing content like `brew shellenv` is kept), appends a one-line marked stub to `~/.bash_profile` (or `~/.profile` if that is what you have) that sources `bash-login.sh` from the repo so login **bash** gets Homebrew and mise on PATH too, and creates the overlay directory. It does **not** install tools, touch your existing prompt config, or migrate anything. First startup clones Zinit (pinned to a release tag) and the plugins; later startups are fast.
 
 Optional extras:
 
@@ -61,7 +61,7 @@ All personal and machine-specific config lives in `${XDG_CONFIG_HOME:-~/.config}
 - **`local.d/*.zsh`** — drop-in files, sourced _after_ everything in the repo, in name order. Override anything: re-export variables, re-alias, redefine functions, re-set zstyles, add your own `zinit` plugins. One concern per file (`editor.zsh`, `work.zsh`, …). One subtlety: if a plugin you add with `wait'1'` or later defines zle widgets, call `_zsh_autosuggest_bind_widgets` in its `atload` so autosuggestions track them — or `unset ZSH_AUTOSUGGEST_MANUAL_REBIND` to get the plugin's per-prompt rebinding back (see [Architecture → turbo tiers](docs/ARCHITECTURE.md#the-turbo-tiers)).
 - **`env.zsh`** — exports that GUI apps must see belong here, not in `local.d`: Zed, VS Code and friends read the environment of a **login shell** (`.zprofile`), which never runs `~/.zshrc`. `env.zsh` is sourced from `~/.zprofile` (wired by the installer) _and_ from `init.zsh`, with a guard so it runs once. Keep it env-only — non-interactive shells source it.
 
-Why does the installer touch bash at all? Agent tools (Orca, Claude Code, Codex), editors and `git` hooks often run commands through `bash -lc …`. On macOS that login bash reads `/etc/profile`, whose `path_helper` moves `/usr/bin` (system Ruby 2.6, Python…) ahead of whatever your zsh had in front — so a `pre-commit`/`rubocop` hook that passes in your terminal fails inside the agent with a "needs Ruby ≥ 2.7" error. The marked block in `~/.bash_profile` puts Homebrew and the mise shims back in front for exactly that shell; zsh is untouched by it.
+Why does the installer touch bash at all? Agent tools (Orca, Claude Code, Codex), editors and `git` hooks often run commands through `bash -lc …`. On macOS that login bash reads `/etc/profile`, whose `path_helper` moves `/usr/bin` (system Ruby 2.6, Python…) ahead of whatever your zsh had in front — so a `pre-commit`/`rubocop` hook that passes in your terminal fails inside the agent with a "needs Ruby ≥ 2.7" error. The stub in `~/.bash_profile` sources the repo's `bash-login.sh`, which puts Homebrew and the mise shims back in front for exactly that shell; zsh is untouched by it. Same contract as `~/.zshrc`: the stub never changes, the logic updates with `zshconf-update`.
 - **`pre.zsh`** — sourced _before_ the core. Only needed for values the core consumes during startup (e.g. `LS_COLORS`). When in doubt, use `local.d`.
 
 The `zshconf-edit` helper opens overlay files in your `$VISUAL`/`$EDITOR` — no need to remember the paths:
@@ -94,7 +94,7 @@ Your own Starship config? If `~/.config/starship.toml` exists (or `STARSHIP_CONF
 rm ~/.zshrc                             # the stub
 rm ~/.zprofile.zwc 2>/dev/null          # stale bytecode, if any
 # remove the marked "zshconf env" block from ~/.zprofile (keep your own lines)
-# remove the marked "zshconf bash-login" block from ~/.bash_profile (or ~/.profile)
+# remove the marked "zshconf bash-login" stub from ~/.bash_profile (or ~/.profile)
 mv ~/.zshrc.pre-zshconf ~/.zshrc        # restore your old config (if any)
 rm -rf ~/.local/share/zshconf        # the clone
 ```

@@ -7,9 +7,10 @@
 #   2. Appends (or refreshes) a marked env block in ~/.zprofile — append-only,
 #      never rewritten wholesale, because ~/.zprofile holds user content
 #      (e.g. `brew shellenv`)
-#   3. Appends (or refreshes) a marked PATH block in the login-bash profile,
-#      so `bash -lc …` (how agent tools and editors run hooks) sees Homebrew
-#      and mise instead of macOS's path_helper order
+#   3. Appends (or refreshes) a marked one-line stub in the login-bash profile
+#      that sources $repo/bash-login.sh, so `bash -lc …` (how agent tools and
+#      editors run hooks) sees Homebrew and mise instead of macOS's
+#      path_helper order. Logic lives in the repo; the stub never changes.
 #   4. Creates the local overlay directory and a commented ~/.config/zsh/env.zsh
 #   5. Prints what it did
 #
@@ -29,7 +30,7 @@ marker="# Managed by the zshconf installer"
 env_marker="# zshconf env (managed by install.sh)"
 env_version=1
 bash_marker="# zshconf bash-login (managed by install.sh)"
-bash_version=1
+bash_version=2   # v1 inlined the logic; v2 is a stub sourcing bash-login.sh
 
 # Login bash reads exactly one of these, first match wins. Target that one so
 # the block is actually read; create ~/.bash_profile when none exists.
@@ -76,44 +77,35 @@ else
 fi
 
 # Sourced by LOGIN bash — `bash -lc …` is how editors, agent tools (Orca,
-# Claude Code, Codex) and the git hooks they run get a shell. On macOS
-# /etc/profile runs path_helper, which puts /usr/bin (system Ruby, Python…)
-# ahead of whatever PATH the parent zsh built; this puts Homebrew and mise
-# back in front. POSIX sh only: the block may land in ~/.profile, which
-# `sh -l` reads too. mise is activated in shim mode because a non-interactive
-# shell never reaches the prompt hook the full activation relies on.
-# The linuxbrew candidate is last and only probed when the others are
-# missing (a literal /home lookup costs ~50 ms on macOS via autofs).
+# Claude Code, Codex) and the git hooks they run get a shell. The stub mirrors
+# the ~/.zshrc one: a single line pointing at the repo, so the logic (in
+# bash-login.sh — see its header for the path_helper story) updates with
+# the repo and the user never re-runs the installer for it. POSIX sh: the
+# stub may land in ~/.profile, which `sh -l` reads too.
 bash_block="# >>> $bash_marker, v$bash_version >>>
-for _zshconf_brew in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
-  if [ -x \"\$_zshconf_brew\" ]; then eval \"\$(\"\$_zshconf_brew\" shellenv)\"; break; fi
-done
-unset _zshconf_brew
-for _zshconf_mise in \"\$(command -v mise 2>/dev/null)\" \"\$HOME/.local/bin/mise\"; do
-  if [ -n \"\$_zshconf_mise\" ] && [ -x \"\$_zshconf_mise\" ]; then eval \"\$(\"\$_zshconf_mise\" activate bash --shims)\"; break; fi
-done
-unset _zshconf_mise
+[ -r \"$repo/bash-login.sh\" ] && . \"$repo/bash-login.sh\"
 # <<< $bash_marker <<<"
 
-# install_block <file> <marker> <version> <block> <label>
+# install_block <file> <marker> <block> <label>
 # Append the marked block, refresh it if stale, else leave alone. Append-only:
-# the file holds user content. Staleness is judged by the versioned start
-# line. Substring tests, not grep: some environments shadow grep with ugrep,
-# which treats a leading '#' in the pattern as a comment — and ours starts
-# with one.
+# the file holds user content. Stale means the block on disk is not this
+# one byte-for-byte: the version in its start line was bumped, or a path
+# baked into it is wrong because the repo moved. Substring tests, not grep:
+# some environments shadow grep with ugrep, which treats a leading '#' in
+# the pattern as a comment — and ours starts with one.
 install_block() {
-  local file="$1" mk="$2" ver="$3" block="$4" label="$5"
+  local file="$1" mk="$2" block="$3" label="$4"
   local content="" pretty="${file/#$HOME/~}"
   local -a before after kept
   local line
   integer in_block=0 seen_end=0
   [[ -f "$file" ]] && content="$(<$file)"
   if [[ "$content" == *"$mk"* ]]; then
-    if [[ "$content" == *"$mk, v$ver"* ]]; then
+    if [[ "$content" == *"$block"* ]]; then
       print -P "%F{green}==>%f $pretty $label block already in place; nothing to do."
     else
-      # Stale block (installer version changed): replace it in place, keep
-      # everything before and after it.
+      # Stale block (version bumped, or repo moved): replace it in place,
+      # keep everything before and after it.
       for line in "${(@f)content}"; do
         if [[ $seen_end -eq 1 ]]; then
           after+=("$line")
@@ -142,8 +134,8 @@ $block" > "$file"
   fi
 }
 
-install_block "$zprofile"     "$env_marker"  "$env_version"  "$env_block"  "env"
-install_block "$bash_profile" "$bash_marker" "$bash_version" "$bash_block" "bash-login"
+install_block "$zprofile"     "$env_marker"  "$env_block"  "env"
+install_block "$bash_profile" "$bash_marker" "$bash_block" "bash-login"
 
 if [[ -d "$overlay/local.d" ]]; then
   print -P "%F{green}==>%f Overlay directory exists: ${overlay/#$HOME/~}/local.d"

@@ -71,36 +71,63 @@ t_eq "stale: current version"   "$(has $fake/.zprofile 'zshconf env (managed by 
 t_eq "stale: brew line kept"    "$(has $fake/.zprofile 'brew shellenv')" "1"
 t_eq "stale: tail content kept" "$(has $fake/.zprofile 'TAIL_KEEP=1')" "1"
 
-# 10. Fresh install writes the login-bash block to ~/.bash_profile (it was
+# 10. Fresh install writes the login-bash stub to ~/.bash_profile (it was
 #     created by run 1; the file is where macOS login bash looks first).
-t_eq "bash: block in .bash_profile" "$(has $fake/.bash_profile 'zshconf bash-login (managed by install.sh), v1')" "1"
-t_eq "bash: block parses as bash"   "$(bash -n $fake/.bash_profile 2>&1; echo $?)" "0"
-t_eq "bash: block parses as sh"     "$(sh -n $fake/.bash_profile 2>&1; echo $?)" "0"
+#     Like the ~/.zshrc stub: one line that sources the repo, no logic.
+t_eq "bash: stub in .bash_profile"  "$(has $fake/.bash_profile 'zshconf bash-login (managed by install.sh), v2')" "1"
+t_eq "bash: stub sources repo file" "$(has $fake/.bash_profile ". \"$REPO/bash-login.sh\"")" "1"
+t_eq "bash: stub is one line"       "$(grep -vc '^#' $fake/.bash_profile | tr -d ' ')" "1"
+t_eq "bash: stub parses as bash"    "$(bash -n $fake/.bash_profile 2>&1; echo $?)" "0"
+t_eq "bash: stub parses as sh"      "$(sh -n $fake/.bash_profile 2>&1; echo $?)" "0"
+t_eq "bash: repo file parses as sh" "$(sh -n $REPO/bash-login.sh 2>&1; echo $?)" "0"
 
-# 11. The block puts mise shims and Homebrew ahead of an inherited
+# 11. bash-login.sh puts mise shims and Homebrew ahead of an inherited
 #     path_helper-style PATH, as `bash -lc` under /etc/profile would see it.
-#     Fake brew/mise binaries: no dependence on what the host has installed.
+#     Fake brew/mise: a copy of the file with its first brew candidate
+#     repointed, the way another prefix would differ; mise found via ~/.local/bin.
 mkdir -p "$fake/fakebrew/bin" "$fake/.local/bin"
 print -r -- '#!/bin/sh
 echo "export PATH=\"'"$fake"'/fakebrew/bin:\$PATH\""' >| "$fake/fakebrew/bin/brew"
 print -r -- '#!/bin/sh
 echo "export PATH=\"'"$fake"'/.local/share/mise/shims:\$PATH\""' >| "$fake/.local/bin/mise"
 chmod +x "$fake/fakebrew/bin/brew" "$fake/.local/bin/mise"
-# Point the block's first brew candidate at the fake: sed the written file
-# the way a user on another prefix would differ, without touching installer.
-sed -i.bak "s|/opt/homebrew/bin/brew|$fake/fakebrew/bin/brew|" "$fake/.bash_profile" && rm -f "$fake/.bash_profile.bak"
-out="$(env -i HOME="$fake" PATH="/usr/bin:/bin" bash --noprofile --norc -c "source '$fake/.bash_profile'; printf '%s' \"\$PATH\"")"
+sed "s|/opt/homebrew/bin/brew|$fake/fakebrew/bin/brew|" "$REPO/bash-login.sh" >| "$TWORK/bash-login.sh"
+out="$(env -i HOME="$fake" PATH="/usr/bin:/bin" bash --noprofile --norc -c "source '$TWORK/bash-login.sh'; printf '%s' \"\$PATH\"")"
 t_match "bash: mise shims first"      "$out" "$fake/.local/share/mise/shims:*"
 t_match "bash: brew before /usr/bin"  "$out" "*$fake/fakebrew/bin:*/usr/bin*"
-t_nomatch "bash: no leaked temp vars" "$(env -i HOME="$fake" PATH="/usr/bin:/bin" bash --noprofile --norc -c "source '$fake/.bash_profile'; set" )" "*_zshconf_*"
+t_nomatch "bash: no leaked temp vars" "$(env -i HOME="$fake" PATH="/usr/bin:/bin" bash --noprofile --norc -c "source '$TWORK/bash-login.sh'; set" )" "*_zshconf_*"
 
-# 12. An existing ~/.profile and no ~/.bash_profile: the block goes to
+# 12. A stub pointing at a moved repo is refreshed (same version, wrong path).
+sed -i.bak "s|$REPO/bash-login.sh|/old/gone/bash-login.sh|g" "$fake/.bash_profile" && rm -f "$fake/.bash_profile.bak"
+run_installer
+t_eq "moved repo: stub repointed" "$(has $fake/.bash_profile ". \"$REPO/bash-login.sh\"")" "1"
+t_eq "moved repo: old path gone"  "$(has $fake/.bash_profile '/old/gone/')" "0"
+
+# 13. A v1 block (logic inlined, several lines) migrates to the v2 stub in
+#     place; the user's own lines around it survive.
+print -r -- 'export PATH=$PATH:$HOME/.maestro/bin
+
+# >>> # zshconf bash-login (managed by install.sh), v1 >>>
+for _zshconf_brew in /opt/homebrew/bin/brew; do
+  if [ -x "$_zshconf_brew" ]; then eval "$("$_zshconf_brew" shellenv)"; break; fi
+done
+unset _zshconf_brew
+# <<< # zshconf bash-login (managed by install.sh) <<<
+export TAIL_KEEP=1' >| "$fake/.bash_profile"
+run_installer
+t_eq "v1→v2: v1 gone"          "$(has $fake/.bash_profile 'v1 >>>')" "0"
+t_eq "v1→v2: inline logic gone" "$(has $fake/.bash_profile '_zshconf_brew')" "0"
+t_eq "v1→v2: v2 stub present"   "$(has $fake/.bash_profile ". \"$REPO/bash-login.sh\"")" "1"
+t_eq "v1→v2: head line kept"    "$(has $fake/.bash_profile 'maestro/bin')" "1"
+t_eq "v1→v2: tail line kept"    "$(has $fake/.bash_profile 'TAIL_KEEP=1')" "1"
+
+# 14. An existing ~/.profile and no ~/.bash_profile: the stub goes to
 #     ~/.profile (what login bash would read) instead of shadowing it.
 fake2="$TWORK/home2"
 mkdir -p "$fake2"
 print -r -- 'export KEEP_PROFILE=1' >| "$fake2/.profile"
 HOME="$fake2" XDG_CONFIG_HOME= zsh "$REPO/install.sh" >"$TWORK/install2.log" 2>&1
 t_eq "profile: no .bash_profile created" "$([[ -e $fake2/.bash_profile ]]; echo $?)" "1"
-t_eq "profile: block appended"           "$(has $fake2/.profile 'zshconf bash-login (managed by install.sh), v1')" "1"
+t_eq "profile: stub appended"            "$(has $fake2/.profile 'zshconf bash-login (managed by install.sh), v2')" "1"
 t_eq "profile: user line kept"           "$(has $fake2/.profile 'KEEP_PROFILE=1')" "1"
 t_done

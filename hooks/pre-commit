@@ -20,6 +20,13 @@ for f in $staged; do
         fail=1
       fi
       ;;
+    bash-login.sh)
+      if ! out=$(sh -n "$f" 2>&1); then
+        echo "FAIL: $f does not parse as sh:"
+        echo "$out" | sed 's/^/    /'
+        fail=1
+      fi
+      ;;
   esac
 done
 
