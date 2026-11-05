@@ -1,18 +1,21 @@
 #!/usr/bin/env zsh
-# install.sh — wire ~/.zshrc to this repo via a 3-line stub, ~/.zprofile to
-# the env overlay, and login bash to the same PATH. Idempotent.
+# install.sh — wire ~/.zshrc to this repo via a 3-line stub, and the login
+# profiles (~/.zprofile, ~/.bash_profile, ~/.profile) to the repo's
+# login-path.sh + the env overlay. Idempotent.
 #
 # Does exactly five things:
 #   1. Backs up any existing (non-stub) ~/.zshrc, then writes the stub
-#   2. Appends (or refreshes) a marked env block in ~/.zprofile — append-only,
-#      never rewritten wholesale, because ~/.zprofile holds user content
-#      (e.g. `brew shellenv`)
-#   3. Appends (or refreshes) a marked one-line stub in the login-bash profile
-#      that sources $repo/bash-login.sh, so `bash -lc …` (how agent tools and
-#      editors run hooks) sees Homebrew and mise instead of macOS's
-#      path_helper order. Logic lives in the repo; the stub never changes.
+#   2. Appends (or refreshes) a marked block in ~/.zprofile that sources
+#      $repo/login-path.sh (Homebrew + mise ahead of path_helper's /usr/bin)
+#      and then the env overlay — append-only, never rewritten wholesale,
+#      because ~/.zprofile holds user content (e.g. `brew shellenv`)
+#   3. Appends (or refreshes) a marked one-line stub sourcing login-path.sh in
+#      the login-bash profile (~/.bash_profile, else ~/.bash_login, else
+#      ~/.profile), and in ~/.profile too when it exists separately — `sh -l`
+#      reads that one. `bash -lc …` is how agent tools and editors run hooks.
 #   4. Creates the local overlay directory and a commented ~/.config/zsh/env.zsh
 #   5. Prints what it did
+# Logic lives in the repo (login-path.sh, init.zsh); the stubs never change.
 #
 # Deliberate non-goals: installing Homebrew or tools (the config degrades
 # gracefully without them), installing Zinit (the config bootstraps it on
@@ -28,9 +31,9 @@ zprofile="$HOME/.zprofile"
 overlay="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
 marker="# Managed by the zshconf installer"
 env_marker="# zshconf env (managed by install.sh)"
-env_version=1
+env_version=2    # v1: env.zsh only; v2: login-path.sh first, then env.zsh
 bash_marker="# zshconf bash-login (managed by install.sh)"
-bash_version=2   # v1 inlined the logic; v2 is a stub sourcing bash-login.sh
+bash_version=3   # v1 inlined the logic; v2 sourced bash-login.sh; v3 login-path.sh
 
 # Login bash reads exactly one of these, first match wins. Target that one so
 # the block is actually read; create ~/.bash_profile when none exists.
@@ -39,15 +42,24 @@ for _f in "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile"; do
   [[ -f "$_f" ]] && { bash_profile="$_f"; break }
 done
 unset _f
+# `sh -l` (bash in POSIX mode on macOS, dash on Debian) reads ~/.profile
+# only. When that file exists alongside a ~/.bash_profile, cover it too;
+# when it doesn't, don't create one — a new ~/.profile would change nothing
+# for bash (already served) and `sh -l` is rare enough not to warrant a file.
+sh_profile=""
+[[ "$bash_profile" != "$HOME/.profile" && -f "$HOME/.profile" ]] && sh_profile="$HOME/.profile"
 
 stub="$marker — personal config goes in $overlay/local.d, not here.
 export ZSHCONF=\"$repo\"
 [[ -r \"\$ZSHCONF/init.zsh\" ]] && source \"\$ZSHCONF/init.zsh\""
 
-# Sourced by login shells (incl. the login shell GUI apps like Zed spawn to
-# read your environment). Guarded so a login+interactive shell that already
-# got it via init.zsh doesn't run it twice.
+# Sourced by login zsh — incl. the `zsh -lc` GUI apps like Zed spawn to read
+# your environment, which never reaches ~/.zshrc. login-path.sh first so
+# Homebrew + mise are in front of path_helper's /usr/bin (and so env.zsh can
+# call tools from them), then the env overlay. Both guarded so a
+# login+interactive shell doesn't run them twice (init.zsh / dev-tools.zsh).
 env_block="# >>> $env_marker, v$env_version >>>
+[ -r \"$repo/login-path.sh\" ] && . \"$repo/login-path.sh\"
 if [[ -z \${ZSHCONF_ENV_SOURCED:-} && -r \"\${XDG_CONFIG_HOME:-\$HOME/.config}/zsh/env.zsh\" ]]; then
   ZSHCONF_ENV_SOURCED=1
   source \"\${XDG_CONFIG_HOME:-\$HOME/.config}/zsh/env.zsh\"
@@ -79,11 +91,11 @@ fi
 # Sourced by LOGIN bash — `bash -lc …` is how editors, agent tools (Orca,
 # Claude Code, Codex) and the git hooks they run get a shell. The stub mirrors
 # the ~/.zshrc one: a single line pointing at the repo, so the logic (in
-# bash-login.sh — see its header for the path_helper story) updates with
+# login-path.sh — see its header for the path_helper story) updates with
 # the repo and the user never re-runs the installer for it. POSIX sh: the
 # stub may land in ~/.profile, which `sh -l` reads too.
 bash_block="# >>> $bash_marker, v$bash_version >>>
-[ -r \"$repo/bash-login.sh\" ] && . \"$repo/bash-login.sh\"
+[ -r \"$repo/login-path.sh\" ] && . \"$repo/login-path.sh\"
 # <<< $bash_marker <<<"
 
 # install_block <file> <marker> <block> <label>
@@ -136,6 +148,7 @@ $block" > "$file"
 
 install_block "$zprofile"     "$env_marker"  "$env_block"  "env"
 install_block "$bash_profile" "$bash_marker" "$bash_block" "bash-login"
+[[ -n "$sh_profile" ]] && install_block "$sh_profile" "$bash_marker" "$bash_block" "bash-login"
 
 if [[ -d "$overlay/local.d" ]]; then
   print -P "%F{green}==>%f Overlay directory exists: ${overlay/#$HOME/~}/local.d"
