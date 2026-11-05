@@ -1,6 +1,5 @@
 #!/usr/bin/env zsh
-# The turbo tiers actually fire: boot with prompt cycles, assert deferred
-# side effects. These assertions have no optional-binary dependencies.
+# Turbo tiers fire: boot with prompt cycles, assert deferred effects.
 source "${0:A:h}/lib.zsh"
 
 t_make_zdot "$TWORK/zdot"
@@ -19,8 +18,6 @@ t_match "tier 2: OMZ git aliases landed"      "$line" "*gst=1*"
 t_match "tier 2: history-substring-search bound" "$line" "*history-substring-search-up*"
 t_match "tier 2: autosuggest-toggle bound (Ctrl+\\)" "$line" "*ctrlbs=*autosuggest-toggle*"
 t_match "tier 2: autosuggest-accept bound (Ctrl+Space)" "$line" "*ctrlspace=*autosuggest-accept*"
-# A bindkey to a widget that doesn't exist yet leaves an empty $widgets entry
-# that fsh (loaded first) reports as "unhandled ZLE widget" on every start.
 t_nomatch "no plugin complaints on stderr"   "$(cat -- "$TWORK/stderr-tiers")" "*unhandled ZLE widget*"
 t_match "Ctrl+Right word jump bound"          "$line" "*ctrlright=*forward-word*"
 if [[ "$line" == *hasfzf=1* ]]; then
@@ -28,7 +25,6 @@ if [[ "$line" == *hasfzf=1* ]]; then
 fi
 t_match "compdump created"                    "$line" "*dump=1*"
 
-# Autosuggest binds once (not on every precmd), wrapping fsh — not vice versa.
 as="$(grep '^AS ' <<< "$out")"
 t_match "fast-syntax-highlighting loaded"     "$as" "*fsh=1*"
 t_match "autosuggest not rebinding per prompt" "$as" "*precmd=0*"

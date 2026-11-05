@@ -1,70 +1,49 @@
-# init.zsh — entry point and load manifest.
-#
-# Sourced from a ~/.zshrc stub:
-#   export ZSHCONF="$HOME/.local/share/zshconf"   # or wherever cloned
-#   source "$ZSHCONF/init.zsh"
-#
-# Modules are sourced at TOP LEVEL, never inside a function: `typeset -U path`
-# and friends inside modules must act on the shell's globals, not become
-# function-locals.
-#
-# The order below is load-bearing. Every hard constraint is commented on the
-# line that enforces it — if you reorder, re-read these first.
+# Entry point. Sourced from the ~/.zshrc stub; modules are sourced at top
+# level so typeset -U and friends act on globals. Order is load-bearing.
 
-# Resolve the repo root if the stub didn't export it.
 : "${ZSHCONF:=${${(%):-%N}:A:h}}"
 
-# ── Local overlay, pre-hook (optional): sourced BEFORE the core. The core
-# reads no configuration variables from it; it exists for values the core
-# consumes during startup (e.g. LS_COLORS, which the list-colors zstyle
-# captures at definition time). Everything else belongs in local.d below.
 ZSHCONF_LOCAL="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
+
+# Overlay pre-hook: values the core reads during startup (e.g. LS_COLORS).
 [[ -r "$ZSHCONF_LOCAL/pre.zsh" ]] && source "$ZSHCONF_LOCAL/pre.zsh"
 
-# ── Env seam: ~/.config/zsh/env.zsh is ALSO sourced from ~/.zprofile (wired
-# by install.sh) so GUI apps that read a login shell's environment (Zed, VS
-# Code) see it. Sourced here too so non-login interactive shells get it; the
-# guard keeps login+interactive shells from running it twice. env-only —
-# non-interactive shells will source it.
+# Env seam. Also sourced from ~/.zprofile; guard keeps it to one run.
 if [[ -z ${ZSHCONF_ENV_SOURCED:-} && -r "$ZSHCONF_LOCAL/env.zsh" ]]; then
-  ZSHCONF_ENV_SOURCED=1   # plain assignment: a prefix assignment on a
-  source "$ZSHCONF_LOCAL/env.zsh"   # builtin would not persist in zsh
+  ZSHCONF_ENV_SOURCED=1
+  source "$ZSHCONF_LOCAL/env.zsh"
 fi
 
-# ── Core (lifecycle phases, strict order)
-source "$ZSHCONF/modules/helpers.zsh"           # _need/_usage (call-time resolved, but defined first anyway)
-source "$ZSHCONF/modules/options.zsh"           # history + setopt (incl. zshaddhistory hook)
-source "$ZSHCONF/modules/path.zsh"              # path/fpath — MUST precede every $+commands guard below
-source "$ZSHCONF/modules/environment.zsh"       # locale, EDITOR, LS_COLORS — vivid needs PATH; list-colors zstyle reads LS_COLORS at definition time
-source "$ZSHCONF/modules/dev-tools.zsh"         # mise — before Starship so the prompt sees shimmed tools
-source "$ZSHCONF/modules/prompt.zsh"            # starship — after PATH + version managers
-source "$ZSHCONF/modules/completion-early.zsh"  # zsh/complist + zcompdump hygiene — MUST run before zicompinit (fires in Tier 1)
-source "$ZSHCONF/modules/plugins.zsh"           # zinit bootstrap + turbo tiers; ALL zinit idioms stay in this file
-source "$ZSHCONF/modules/keybindings.zsh"       # binds deferred widgets by name; safe before their plugins load
-source "$ZSHCONF/modules/completion-styles.zsh" # zstyles read at completion time — after plugins, before first Tab
+source "$ZSHCONF/modules/helpers.zsh"
+source "$ZSHCONF/modules/options.zsh"
+source "$ZSHCONF/modules/path.zsh"              # before any $+commands guard
+source "$ZSHCONF/modules/environment.zsh"       # LS_COLORS before completion-styles
+source "$ZSHCONF/modules/dev-tools.zsh"         # mise before starship
+source "$ZSHCONF/modules/prompt.zsh"
+source "$ZSHCONF/modules/completion-early.zsh"  # complist + dump hygiene before zicompinit
+source "$ZSHCONF/modules/plugins.zsh"           # all zinit idioms live here
+source "$ZSHCONF/modules/keybindings.zsh"
+source "$ZSHCONF/modules/completion-styles.zsh" # after plugins, before first Tab
 
-# ── Guarded tool integrations (each self-contained behind $+commands)
-source "$ZSHCONF/modules/tools/fzf.zsh"         # uses _zinit_evalcache from plugins.zsh
-source "$ZSHCONF/modules/tools/zoxide.zsh"      # uses _zinit_evalcache from plugins.zsh
+source "$ZSHCONF/modules/tools/fzf.zsh"
+source "$ZSHCONF/modules/tools/zoxide.zsh"
 source "$ZSHCONF/modules/tools/docker.zsh"
 source "$ZSHCONF/modules/tools/bat.zsh"
 source "$ZSHCONF/modules/tools/fd.zsh"
 source "$ZSHCONF/modules/tools/ripgrep.zsh"
-source "$ZSHCONF/modules/tools/heroku.zsh"      # guarded; no-op without the heroku CLI
-source "$ZSHCONF/modules/tools/modelpreset.zsh" # Claude Code endpoint/model preset switcher
+source "$ZSHCONF/modules/tools/heroku.zsh"
+source "$ZSHCONF/modules/tools/modelpreset.zsh"
 
-# ── Aliases by domain
 source "$ZSHCONF/modules/aliases/general.zsh"
 source "$ZSHCONF/modules/aliases/homebrew.zsh"
 source "$ZSHCONF/modules/aliases/system.zsh"
 
-# ── OS-specific leaf modules (the ONLY $OSTYPE dispatch in the project)
+# The only $OSTYPE dispatch in the project.
 case "$OSTYPE" in
   darwin*) source "$ZSHCONF/modules/os/darwin.zsh" ;;
   linux*)  source "$ZSHCONF/modules/os/linux.zsh" ;;
 esac
 
-# ── Autoloaded user functions: one file per function in functions/
 fpath=("$ZSHCONF/functions" $fpath)
 () {
   local -a fns
@@ -72,20 +51,14 @@ fpath=("$ZSHCONF/functions" $fpath)
   (( $#fns )) && autoload -Uz -- "${fns[@]}"
 }
 
-# ── Local overlay, post-hook (optional): personal/machine drop-ins, sourced
-# LAST so they can override anything above — re-export vars, re-alias,
-# redefine functions, re-set zstyles (turbo plugins read them after the
-# prompt), and register extra zinit plugins (zinit is loaded by now).
-# One concern per file; files load in name order.
+# Overlay drop-ins, last so they override anything above.
 for _zshconf_f in "$ZSHCONF_LOCAL"/local.d/*.zsh(.N); do
   source "$_zshconf_f"
 done
 unset _zshconf_f
 
-# ── Auto-compile (background-rebuild stale bytecode; `source` only uses a
-#    .zwc that is at least as new as its source, so stale bytecode is
-#    silently ignored, never wrongly used). One fork covers both the modules
-#    and the completion dump (which Tier 1's compinit reads next startup).
+# Recompile stale bytecode in the background. source ignores a .zwc older
+# than its source, so a stale one is never used.
 {
   for _zshconf_f in "$ZSHCONF"/init.zsh "$ZSHCONF"/modules/**/*.zsh(.N) \
                     "${ZDOTDIR:-$HOME}"/.zcompdump(.N); do

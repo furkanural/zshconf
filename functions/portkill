@@ -1,4 +1,4 @@
-# SIGTERM whoever holds <port> (use kill -9 <pid> for SIGKILL).
+# portkill <port>: SIGTERM whatever listens on <port>.
 [[ -n "$1" ]] || { _usage "portkill <port_number>"; return; }
 local pids=$(lsof -ti :"$1")
 if [[ -n "$pids" ]]; then

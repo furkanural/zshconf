@@ -1,6 +1,5 @@
 #!/usr/bin/env zsh
-# sysup Tab completion: the full config binds `sysup` to the repo's _sysup
-# completer, and a real Tab press offers exactly the supported options.
+# sysup Tab completion.
 source "${0:A:h}/lib.zsh"
 
 t_make_zdot "$TWORK/zdot"

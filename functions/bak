@@ -1,4 +1,4 @@
-# Timestamped backup copy(ies). Trailing slash stripped so `bak dir/` → sibling.
+# bak <file>...: timestamped copy next to the original.
 [[ -n "$1" ]] || { _usage "bak <file>..."; return; }
 local file
 for file in "$@"; do

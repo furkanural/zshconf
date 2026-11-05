@@ -1,5 +1,4 @@
-# Open the current branch's PR (existing, else new-PR draft).
+# ghpr: open the current branch's PR, or a new-PR draft.
 _need gh || return
-
 gh pr view --web 2>/dev/null && return
 gh pr create --web "$@"

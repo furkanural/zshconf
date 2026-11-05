@@ -1,6 +1,5 @@
 #compdef portkill portprocess
-# Completion for portkill / portprocess: TCP ports with a listening process,
-# described by the owning command, e.g. "3000 -- node". Needs lsof.
+# Listening TCP ports, described by the owning command.
 
 (( CURRENT == 2 )) || return 1
 (( $+commands[lsof] )) || return 1
@@ -13,6 +12,6 @@ for line in ${(f)"$(_call_program ports lsof -nP -iTCP -sTCP:LISTEN -Fcn 2>/dev/
     n*) ports+=("${line##*:}:${cmd}") ;;
   esac
 done
-ports=(${(u)ports})   # same port on IPv4 + IPv6 → one entry
+ports=(${(u)ports})   # IPv4 + IPv6 dedup
 
 _describe -t ports 'listening port' ports

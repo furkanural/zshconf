@@ -1,6 +1,5 @@
 #!/usr/bin/env zsh
-# Function-level tests, for functions with real logic. gbclean: against a
-# fixture repo — keeps main + current + unmerged, deletes merged, -f forces.
+# gbclean against a fixture repo; zshconf-update against a fixture remote.
 source "${0:A:h}/lib.zsh"
 
 fpath=("$REPO/functions" $fpath)
@@ -12,9 +11,9 @@ mkdir -p "$fixture" && cd "$fixture"
 git init -q -b main
 git config user.email test@test && git config user.name test
 git commit --allow-empty -qm init
-git branch merged-at-head                 # points at HEAD → merged
+git branch merged-at-head
 git checkout -qb unmerged-work
-git commit --allow-empty -qm extra        # commit main doesn't have
+git commit --allow-empty -qm extra
 git checkout -q main
 
 gbclean >/dev/null 2>&1
@@ -25,8 +24,7 @@ git checkout -qb current-branch
 gbclean >/dev/null 2>&1
 t_eq "current branch survives" "$(git branch --show-current)" "current-branch"
 
-# Branches checked out in another worktree (marked '+') must be skipped —
-# git would refuse anyway, but gbclean shouldn't even attempt them.
+# Worktree branches are skipped, not attempted
 git branch wt-branch
 git worktree add -q "$TWORK/wt" wt-branch
 out=$(gbclean 2>&1)
@@ -44,8 +42,7 @@ t_eq "--force deletes unmerged too" "$(git branch --format='%(refname:short)' | 
 out=$(gbclean 2>&1)
 t_eq "nothing to delete message" "$out" "No branches to delete."
 
-# zshconf-update: refuses uncommitted edits (which --ff-only alone would let
-# through when upstream doesn't touch the file), fast-forwards when clean.
+# zshconf-update
 autoload -Uz zshconf-update
 upstream="$TWORK/upstream" clone="$TWORK/clone"
 git init -q -b main "$upstream"

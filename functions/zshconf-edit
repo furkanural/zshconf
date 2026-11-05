@@ -1,12 +1,5 @@
-# Open personal overlay files (${XDG_CONFIG_HOME:-~/.config}/zsh/) in an
-# editor — the supported way to customize this config without touching the
-# repo (which is sourced, never edited; see `zshconf-update`).
-#   zshconf-edit              list overlay files
-#   zshconf-edit pre          edit pre.zsh (startup-consumed values only)
-#   zshconf-edit env          edit env.zsh (exports GUI apps must see)
-#   zshconf-edit <name>       edit local.d/<name>.zsh (created on demand)
-# Opens in $VISUAL if set, else $EDITOR. Overlay paths are repo-relative via
-# ZSHCONF_LOCAL, set by init.zsh.
+# zshconf-edit [pre|env|<name>]: open an overlay file in $VISUAL/$EDITOR,
+# creating it with a short header. No argument lists them.
 emulate -L zsh
 setopt localoptions extendedglob
 
@@ -24,7 +17,6 @@ case "${1:-}" in
     ;;
 esac
 
-# No argument: list what's there.
 if (( $# == 0 )); then
   local -a files
   files=("$overlay"/pre.zsh(N) "$overlay"/env.zsh(N) "$overlay"/local.d/*.zsh(N))

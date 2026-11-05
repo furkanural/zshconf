@@ -1,6 +1,4 @@
 #compdef sysup
-# Completion for sysup (functions/sysup). Options are mutually exclusive and
-# sysup takes no other arguments.
 
 _arguments -s \
   '(- *)'{-h,--help}'[show usage]' \

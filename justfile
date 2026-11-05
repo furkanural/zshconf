@@ -1,8 +1,3 @@
-# just test           — full suite (what CI runs)
-# just parse          — quick syntax gate only
-# just test-bare      — CI's toughest cell locally: bare Linux, no optional tools
-# just install-hooks  — opt into the pre-commit hook (syntax, filenames, size, secrets)
-
 default: test
 
 install-hooks:

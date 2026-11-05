@@ -1,8 +1,5 @@
-# ── Locale: a UTF-8 default, not an override. A LANG the system or the user
-# already set (macOS Language & Region, /etc/locale.conf, a de_DE login) is
-# respected; only an empty/unset one gets en_US.UTF-8. A non-UTF-8 LANG
-# (e.g. a bare "C" from a minimal container) is upgraded to C.UTF-8 where
-# it exists, else en_US.UTF-8 — the prompt and plugins print UTF-8.
+# Locale: keep a UTF-8 LANG the system set; default an empty one; upgrade a
+# non-UTF-8 one (C, POSIX).
 if [[ -z "${LANG:-}" ]]; then
   export LANG="en_US.UTF-8"
 elif [[ "$LANG" != *[Uu][Tt][Ff]-8* && "$LANG" != *[Uu][Tt][Ff]8* ]]; then
@@ -15,18 +12,15 @@ fi
 export LC_CTYPE="$LANG"
 export TIME_STYLE="long-iso"
 
-# ── Default programs
-export EDITOR="nano"           # git commit / rebase todo
-export VISUAL="zed --wait"     # mergetool / gh pr edit
+export EDITOR="nano"
+export VISUAL="zed --wait"
 export PAGER="less"
 
-# ── Environment
 export GPG_TTY=$TTY
 export HOMEBREW_NO_ANALYTICS=1
 
-# LS_COLORS feeds eza fallbacks + completion list-colors; macOS ships none.
-# Consumed at startup (list-colors zstyle captures it at definition time), so
-# a pre-set value — e.g. from the overlay's pre.zsh — is respected, not clobbered.
+# A pre-set LS_COLORS (overlay pre.zsh) wins; completion-styles reads it at
+# definition time.
 if [[ -n "$LS_COLORS" ]]; then
   :
 elif (( $+commands[vivid] )); then

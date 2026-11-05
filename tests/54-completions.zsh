@@ -1,7 +1,5 @@
 #!/usr/bin/env zsh
-# Tab completion for the other repo functions. The full config binds each
-# function to its completer; real Tab presses offer the right candidates.
-# lsof- and rg-dependent cases skip when the tool is missing (bare CI cell).
+# Tab completion for the repo functions; lsof/rg cases skip when absent.
 source "${0:A:h}/lib.zsh"
 
 t_make_zdot "$TWORK/zdot"
@@ -12,7 +10,6 @@ print -r -- "COMPS ${_comps[gbclean]} ${_comps[zshconf-edit]} ${_comps[portkill]
 t_eq "config binds every completer" "$(grep '^COMPS ' <<< "$out")" \
   "COMPS _gbclean _zshconf-edit _portkill _portkill _killnamed _rgg _cdl _cdl"
 
-# Fixture overlay with one drop-in; a dir + file to tell directories apart.
 overlay="$TWORK/overlay"
 mkdir -p "$overlay/local.d" "$TWORK/cwd/somedir"
 : > "$overlay/local.d/work.zsh"
@@ -37,15 +34,13 @@ t_complete 'mkcd '
 t_match   "mkcd offers directories" "$screen" "*somedir*"
 t_nomatch "mkcd skips files"        "$screen" "*somefile*"
 
-# A uniquely named process to find by name. `exec -a` renames sleep's argv[0]
-# (copying the binary instead gets it killed by macOS code signing).
+# exec -a renames argv[0]; copying the binary trips macOS code signing.
 zsh -c 'exec -a zshconfprobe sleep 30' &
 probe_pid=$!
 t_complete 'killnamed zshconfpr'
 t_match "killnamed completes process names" "$screen" "*killnamed zshconfprobe*"
 
 if (( $+commands[lsof] && $+commands[python3] )); then
-  # A listener on a free port, so there is a known port to complete.
   python3 -c '
 import socket, time
 s = socket.socket(); s.bind(("127.0.0.1", 0)); s.listen()
@@ -63,9 +58,7 @@ else
 fi
 kill $probe_pid 2>/dev/null
 
-# Same dirs the pty shell searches: T_BREW_FPATH + zsh's built-in default
-# (FPATH unset, as in t_complete). An array glob, not [[ -n ... ]]: a string
-# test is always true.
+# Is _rg where the pty shell would find it? (array glob: a string test is always true)
 rg_comp=(${^T_BREW_FPATH}/_rg(N) ${^${(f)"$(env -u FPATH zsh -fc 'print -l $fpath')"}}/_rg(N))
 if (( $+commands[rg] && $#rg_comp )); then
   t_complete 'rgg --hid'

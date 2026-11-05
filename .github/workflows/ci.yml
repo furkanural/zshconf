@@ -44,9 +44,7 @@ jobs:
     continue-on-error: true
     timeout-minutes: 15
     env:
-      # Ubuntu's /etc/zsh/zshrc runs a bare compinit; on runners with
-      # group-writable fpath dirs it prompts (or aborts) and zsh-bench
-      # hangs on the prompt. The config owns completion setup — skip it.
+      # Ubuntu's global zshrc runs compinit, which prompts on the runner.
       skip_global_compinit: 1
     steps:
       - uses: actions/checkout@v7

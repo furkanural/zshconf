@@ -4,12 +4,12 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 
 ## Unreleased
 
-- **Login shells get the same PATH as interactive zsh:** `install.sh` now wires `~/.zprofile` and `~/.bash_profile` (or `~/.profile`) to the repo's `login-path.sh`, which re-runs `brew shellenv` and `mise activate bash --shims`. Fixes `bash -lc` (agent tools — Orca, Claude Code, Codex — editors, git hooks) and `zsh -lc` (GUI apps reading your environment) picking up macOS system Ruby 2.6 instead of mise's, because `path_helper` reorders the inherited PATH. Re-run `./install.sh` to get it; existing blocks are migrated in place.
-- Completion dump invalidation now watches every Homebrew `site-functions` dir on `fpath` (Intel macOS, Linuxbrew), not only `/opt/homebrew`.
-- **Login shells start ~45 ms faster:** `login-path.sh` writes Homebrew's exports itself instead of forking `brew shellenv` (a test keeps them identical to Homebrew's output). `zsh -lc` ≈ 35 ms, `bash -lc` ≈ 15 ms.
-- `login-path.sh` prefers `~/.local/bin/mise` (the mise.run install) over a package-manager copy on PATH. mise dropped from the `Brewfile`: its docs recommend the install script. Migration: `curl -fsSL https://mise.run | sh && brew uninstall mise && mise reshim`.
-- Locale is a default, not an override: a `LANG` the system or user already set is kept (previously forced to `en_US.UTF-8`); only an empty one gets `en_US.UTF-8`, and a non-UTF-8 one (`C`, `POSIX`) is upgraded to `C.UTF-8`.
-- ~3 ms off every startup: the compdump poison check no longer forks `grep`.
+- **Login shells get Homebrew and mise:** `install.sh` wires `~/.zprofile` and `~/.bash_profile` (or `~/.profile`) to `login-path.sh`. Fixes `bash -lc` (agent tools, editors, git hooks) and `zsh -lc` (GUI apps) resolving macOS system Ruby/Python ahead of mise. Re-run `./install.sh`; existing blocks migrate in place.
+- `login-path.sh` writes Homebrew's exports instead of forking `brew shellenv`: `zsh -lc` ≈ 20 ms, `bash -lc` ≈ 15 ms.
+- mise is expected from its install script (`curl -fsSL https://mise.run | sh`), as its docs recommend; dropped from the `Brewfile`. Switching: `brew uninstall mise && mise reshim`.
+- `LANG` is a default, not an override: an existing UTF-8 locale is kept; `C`/`POSIX` become `C.UTF-8`.
+- Compdump invalidation watches every Homebrew `site-functions` dir on `fpath`, and no longer forks `grep`.
+- Comments rewritten throughout: short, present-tense, no history.
 - Fix: `zsh-syntax-highlighting: unhandled ZLE widget 'autosuggest-accept'` printed on every start since the Tier 2 reorder — `Ctrl+Space` was bound before the widget existed; it is now bound alongside `Ctrl+\` once autosuggestions load. The tier test asserts a clean stderr from plugins.
 - **Faster startup on macOS (~190 → ~135 ms):** Linuxbrew candidate paths no longer trigger the `/home` autofs automounter (~50 ms per shell).
 - **Faster prompts (~20 ms less per prompt):** zsh-autosuggestions no longer re-wraps every widget on each prompt (`ZSH_AUTOSUGGEST_MANUAL_REBIND`, bound once after each relevant tier). Suggestion lookups stop once the line exceeds 200 chars (pasted text).
