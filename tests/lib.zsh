@@ -49,11 +49,14 @@ t_boot() {
   ZDOTDIR="$1" XDG_CONFIG_HOME="$2" zsh -i -c "$3" 2>"$TWORK/stderr"
 }
 
-# t_boot_tiers <zdot> <xdg> <probe>: boot with enough prompt cycles for all
-# tiers to fire (one turbo item per prompt when piped). stderr has prompt
-# noise; assert absence of a substring, never emptiness.
+# t_boot_tiers <zdot> <xdg> <probe>: boot and feed prompt cycles until the
+# last Tier 3 atload has run (_autosuggest_rebind unsets itself), then run
+# the probe. Bounded at 60 s. stderr has prompt noise; assert absence of a
+# substring, never emptiness.
 t_boot_tiers() {
-  { for _ in {1..45}; do print 'sleep 0.3'; done
+  { for _ in {1..200}; do
+      print '(( ${+functions[_autosuggest_rebind]} )) && sleep 0.3'
+    done
     print -r -- "$3"
     print 'exit'
   } | ZDOTDIR="$1" XDG_CONFIG_HOME="$2" zsh -i 2>"$TWORK/stderr-tiers"
