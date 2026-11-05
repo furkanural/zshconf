@@ -1,14 +1,17 @@
 #!/usr/bin/env zsh
-# install.sh — wire ~/.zshrc to this repo via a 3-line stub, and ~/.zprofile
-# to the env overlay. Idempotent.
+# install.sh — wire ~/.zshrc to this repo via a 3-line stub, ~/.zprofile to
+# the env overlay, and login bash to the same PATH. Idempotent.
 #
-# Does exactly four things:
+# Does exactly five things:
 #   1. Backs up any existing (non-stub) ~/.zshrc, then writes the stub
 #   2. Appends (or refreshes) a marked env block in ~/.zprofile — append-only,
 #      never rewritten wholesale, because ~/.zprofile holds user content
 #      (e.g. `brew shellenv`)
-#   3. Creates the local overlay directory and a commented ~/.config/zsh/env.zsh
-#   4. Prints what it did
+#   3. Appends (or refreshes) a marked PATH block in the login-bash profile,
+#      so `bash -lc …` (how agent tools and editors run hooks) sees Homebrew
+#      and mise instead of macOS's path_helper order
+#   4. Creates the local overlay directory and a commented ~/.config/zsh/env.zsh
+#   5. Prints what it did
 #
 # Deliberate non-goals: installing Homebrew or tools (the config degrades
 # gracefully without them), installing Zinit (the config bootstraps it on
@@ -25,6 +28,16 @@ overlay="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
 marker="# Managed by the zshconf installer"
 env_marker="# zshconf env (managed by install.sh)"
 env_version=1
+bash_marker="# zshconf bash-login (managed by install.sh)"
+bash_version=1
+
+# Login bash reads exactly one of these, first match wins. Target that one so
+# the block is actually read; create ~/.bash_profile when none exists.
+bash_profile="$HOME/.bash_profile"
+for _f in "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile"; do
+  [[ -f "$_f" ]] && { bash_profile="$_f"; break }
+done
+unset _f
 
 stub="$marker — personal config goes in $overlay/local.d, not here.
 export ZSHCONF=\"$repo\"
@@ -62,49 +75,75 @@ else
   print -P "%F{green}==>%f Wrote the ~/.zshrc stub (sources $repo/init.zsh)."
 fi
 
-# ── ~/.zprofile: append the env block, refresh it if stale, else leave alone.
-# Staleness is judged by the versioned start line. Substring tests, not grep:
-# some environments shadow grep with ugrep, which treats a leading '#' in the
-# pattern as a comment — and ours starts with one.
-_zshconf_zprof=""
-if [[ -f "$zprofile" ]]; then
-  _zshconf_zprof="$(<$zprofile)"
-fi
-if [[ "$_zshconf_zprof" == *"$env_marker"* ]]; then
-  if [[ "$_zshconf_zprof" == *"$env_marker, v$env_version"* ]]; then
-    print -P "%F{green}==>%f ~/.zprofile env block already in place; nothing to do."
-  else
-    # Stale block (installer version changed): replace it in place, keep
-    # everything before and after it.
-    before=() after=()
-    integer in_block=0 seen_end=0
-    for line in "${(@f)$(<$zprofile)}"; do
-      if [[ $seen_end -eq 1 ]]; then
-        after+=("$line")
-      elif [[ "$line" == "# >>> $env_marker, v"*">>>" ]]; then
-        in_block=1
-      elif [[ "$line" == "# <<< $env_marker <<<" ]]; then
-        in_block=0 seen_end=1
-      elif [[ $in_block -eq 0 ]]; then
-        before+=("$line")
-      fi
-    done
-    # Drop trailing blank lines from `before` so we don't accumulate gaps.
-    while (( ${#before} )) && [[ -z "${before[-1]}" ]]; do before=("${before[1,-2]}"); done
-    kept=("${before[@]}" "$env_block" "${after[@]}")
-    print -r -- "${(F)kept}" > "$zprofile"
-    print -P "%F{green}==>%f Refreshed the ~/.zprofile env block."
-  fi
-elif [[ -e "$zprofile" ]]; then
-  print -r -- "$(<$zprofile)
+# Sourced by LOGIN bash — `bash -lc …` is how editors, agent tools (Orca,
+# Claude Code, Codex) and the git hooks they run get a shell. On macOS
+# /etc/profile runs path_helper, which puts /usr/bin (system Ruby, Python…)
+# ahead of whatever PATH the parent zsh built; this puts Homebrew and mise
+# back in front. POSIX sh only: the block may land in ~/.profile, which
+# `sh -l` reads too. mise is activated in shim mode because a non-interactive
+# shell never reaches the prompt hook the full activation relies on.
+# The linuxbrew candidate is last and only probed when the others are
+# missing (a literal /home lookup costs ~50 ms on macOS via autofs).
+bash_block="# >>> $bash_marker, v$bash_version >>>
+for _zshconf_brew in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
+  if [ -x \"\$_zshconf_brew\" ]; then eval \"\$(\"\$_zshconf_brew\" shellenv)\"; break; fi
+done
+unset _zshconf_brew
+for _zshconf_mise in \"\$(command -v mise 2>/dev/null)\" \"\$HOME/.local/bin/mise\"; do
+  if [ -n \"\$_zshconf_mise\" ] && [ -x \"\$_zshconf_mise\" ]; then eval \"\$(\"\$_zshconf_mise\" activate bash --shims)\"; break; fi
+done
+unset _zshconf_mise
+# <<< $bash_marker <<<"
 
-$env_block" > "$zprofile"
-  print -P "%F{green}==>%f Appended the env block to existing ~/.zprofile."
-else
-  print -r -- "$env_block" > "$zprofile"
-  print -P "%F{green}==>%f Wrote ~/.zprofile with the env block."
-fi
-unset _zshconf_zprof
+# install_block <file> <marker> <version> <block> <label>
+# Append the marked block, refresh it if stale, else leave alone. Append-only:
+# the file holds user content. Staleness is judged by the versioned start
+# line. Substring tests, not grep: some environments shadow grep with ugrep,
+# which treats a leading '#' in the pattern as a comment — and ours starts
+# with one.
+install_block() {
+  local file="$1" mk="$2" ver="$3" block="$4" label="$5"
+  local content="" pretty="${file/#$HOME/~}"
+  local -a before after kept
+  local line
+  integer in_block=0 seen_end=0
+  [[ -f "$file" ]] && content="$(<$file)"
+  if [[ "$content" == *"$mk"* ]]; then
+    if [[ "$content" == *"$mk, v$ver"* ]]; then
+      print -P "%F{green}==>%f $pretty $label block already in place; nothing to do."
+    else
+      # Stale block (installer version changed): replace it in place, keep
+      # everything before and after it.
+      for line in "${(@f)content}"; do
+        if [[ $seen_end -eq 1 ]]; then
+          after+=("$line")
+        elif [[ "$line" == "# >>> $mk, v"*">>>" ]]; then
+          in_block=1
+        elif [[ "$line" == "# <<< $mk <<<" ]]; then
+          in_block=0 seen_end=1
+        elif [[ $in_block -eq 0 ]]; then
+          before+=("$line")
+        fi
+      done
+      # Drop trailing blank lines from `before` so we don't accumulate gaps.
+      while (( ${#before} )) && [[ -z "${before[-1]}" ]]; do before=("${before[1,-2]}"); done
+      kept=("${before[@]}" "$block" "${after[@]}")
+      print -r -- "${(F)kept}" > "$file"
+      print -P "%F{green}==>%f Refreshed the $pretty $label block."
+    fi
+  elif [[ -e "$file" ]]; then
+    print -r -- "$content
+
+$block" > "$file"
+    print -P "%F{green}==>%f Appended the $label block to existing $pretty."
+  else
+    print -r -- "$block" > "$file"
+    print -P "%F{green}==>%f Wrote $pretty with the $label block."
+  fi
+}
+
+install_block "$zprofile"     "$env_marker"  "$env_version"  "$env_block"  "env"
+install_block "$bash_profile" "$bash_marker" "$bash_version" "$bash_block" "bash-login"
 
 if [[ -d "$overlay/local.d" ]]; then
   print -P "%F{green}==>%f Overlay directory exists: ${overlay/#$HOME/~}/local.d"
