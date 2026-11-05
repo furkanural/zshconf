@@ -36,6 +36,10 @@ _repair_clap_dynamic_completions() {
     return 0
   fi
 
+  # The brew site-functions candidates mirror path.zsh's fpath list — a
+  # formula that ships a completer must invalidate the dump on every prefix.
+  # (N) on them: a missing dir is skipped without an -e test, and the
+  # [l]inuxbrew bracket glob avoids the autofs stall (see path.zsh).
   local watched=(
     "$ZSHCONF"/init.zsh
     "$ZSHCONF"/modules/**/*.zsh(N)
@@ -43,7 +47,9 @@ _repair_clap_dynamic_completions() {
     "$zdot/.zsh/completions"                    # user/generated completers (e.g. _docker)
     "$HOME/.local/share/zinit/completions"
     "$HOME/.cache/zinit/completions"
-    "/opt/homebrew/share/zsh/site-functions"
+    /opt/homebrew/share/zsh/site-functions(N)
+    /usr/local/share/zsh/site-functions(N)
+    /home/[l]inuxbrew/.linuxbrew/share/zsh/site-functions(N)
   )
 
   local entry
