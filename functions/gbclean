@@ -1,6 +1,5 @@
-# Delete local branches merged into HEAD. Skips main/master/develop, the
-# current branch (*), and branches checked out in other worktrees (+).
-# (Most day-to-day git aliases — gst, gco, gp — come from OMZP::git.)
+# gbclean [-f]: delete local branches merged into HEAD. Skips main/master/
+# develop, the current branch (*) and worktree branches (+).
 local force=0
 
 case "$1" in
@@ -19,7 +18,6 @@ esac
 local delete_flag="-d"
 (( force )) && delete_flag="-D"
 
-# Force mode lists all local branches; default lists only merged ones.
 local -a merged_flag
 (( force )) || merged_flag=(--merged)
 

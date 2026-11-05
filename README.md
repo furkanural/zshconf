@@ -27,13 +27,16 @@ cd ~/.local/share/zshconf
 exec zsh
 ```
 
-The installer does five things, idempotently: backs up any existing `~/.zshrc` (to `~/.zshrc.pre-zshconf`), writes a 3-line stub that sources this repo, appends a marked block to `~/.zprofile` that sources the repo's `login-path.sh` and then the env overlay (existing content like `brew shellenv` is kept), appends a one-line marked stub sourcing `login-path.sh` to `~/.bash_profile` (or `~/.profile` if that is what you have; both if both exist), and creates the overlay directory. It does **not** install tools, touch your existing prompt config, or migrate anything. First startup clones Zinit (pinned to a release tag) and the plugins; later startups are fast.
+The installer is idempotent and never deletes your content. It backs up an existing `~/.zshrc` (to `~/.zshrc.pre-zshconf`) and writes a 3-line stub; appends a marked block to `~/.zprofile` and a marked one-line stub to `~/.bash_profile` (or `~/.profile`), both sourcing the repo's `login-path.sh`; and creates the overlay directory. It does not install tools or migrate anything. First startup clones Zinit (pinned) and the plugins.
 
 Optional extras:
 
 ```sh
 brew bundle --file "$ZSHCONF/Brewfile"   # the tools the config integrates with (works from any directory)
+curl -fsSL https://mise.run | sh         # mise, the way its docs recommend (not via Homebrew)
 ```
+
+mise comes from [its install script](https://mise.jdx.dev/installing-mise.html), as its docs recommend; it lands in `~/.local/bin`. Switching from a Homebrew mise: `brew uninstall mise && mise reshim`.
 
 ## Update
 
@@ -41,7 +44,7 @@ brew bundle --file "$ZSHCONF/Brewfile"   # the tools the config integrates with 
 zshconf-update      # git pull --ff-only + recompile, then: exec zsh
 ```
 
-Update is deliberately strict: if the repo has uncommitted edits or local commits, it stops instead of merging. That's the contract — the core is sourced, never edited. (The `sysup` function runs this automatically as one of its lanes.)
+It refuses to pull over local edits or commits: the core is sourced, never edited. `sysup` runs it as one of its lanes.
 
 `sysup` also updates Homebrew and Zinit, refreshes completions, prints a per-lane summary, and returns nonzero if any update fails.
 
@@ -58,11 +61,11 @@ The repo passes no Topgrade config — tool defaults apply, and you tune it in y
 
 All personal and machine-specific config lives in `${XDG_CONFIG_HOME:-~/.config}/zsh/`, outside this repo:
 
-- **`local.d/*.zsh`** — drop-in files, sourced _after_ everything in the repo, in name order. Override anything: re-export variables, re-alias, redefine functions, re-set zstyles, add your own `zinit` plugins. One concern per file (`editor.zsh`, `work.zsh`, …). One subtlety: if a plugin you add with `wait'1'` or later defines zle widgets, call `_zsh_autosuggest_bind_widgets` in its `atload` so autosuggestions track them — or `unset ZSH_AUTOSUGGEST_MANUAL_REBIND` to get the plugin's per-prompt rebinding back (see [Architecture → turbo tiers](docs/ARCHITECTURE.md#the-turbo-tiers)).
-- **`env.zsh`** — exports that GUI apps must see belong here, not in `local.d`: Zed, VS Code and friends read the environment of a **login zsh** (`zsh -lc`, which reads `~/.zprofile` and never runs `~/.zshrc`). `env.zsh` is sourced from `~/.zprofile` (wired by the installer) _and_ from `init.zsh`, with a guard so it runs once. Keep it env-only — non-interactive shells source it. It is zsh syntax; login **bash** does not read it.
+- **`local.d/*.zsh`** — drop-ins sourced after the repo, in name order. Override anything; one concern per file. A plugin you add with `wait'1'` or later that defines widgets needs `atload'_zsh_autosuggest_bind_widgets'` (see [Architecture](docs/ARCHITECTURE.md#turbo-tiers)).
+- **`env.zsh`** — exports GUI apps must see. Zed, VS Code and friends read a login zsh's environment, which never runs `~/.zshrc`; `env.zsh` is sourced from `~/.zprofile` and from `init.zsh`, once. Env only, zsh syntax.
+- **`pre.zsh`** — sourced before the core, for values it reads at startup (e.g. `LS_COLORS`). Rarely needed.
 
-Why does the installer touch the login profiles at all? Two kinds of shell read a login profile but never `~/.zshrc`: `zsh -lc …` (how GUI apps read your environment) and `bash -lc …` (how agent tools — Orca, Claude Code, Codex — editors and `git` hooks run commands). On macOS both run `path_helper` first, which moves `/usr/bin` (system Ruby 2.6, Python…) ahead of whatever your interactive zsh had in front — so a `pre-commit`/`rubocop` hook that passes in your terminal fails inside the agent with a "needs Ruby ≥ 2.7" error. The stubs source the repo's `login-path.sh`, which puts Homebrew and the mise shims back in front for exactly those shells; your interactive zsh is unaffected. Same contract as `~/.zshrc`: the stubs never change, the logic updates with `zshconf-update`.
-- **`pre.zsh`** — sourced _before_ the core. Only needed for values the core consumes during startup (e.g. `LS_COLORS`). When in doubt, use `local.d`.
+Why the login profiles? `zsh -lc` (GUI apps) and `bash -lc` (agent tools, editors, git hooks) never reach `~/.zshrc`, and macOS `path_helper` puts `/usr/bin` — system Ruby, Python — ahead of the PATH they inherited. The stubs source `login-path.sh`, which restores Homebrew and mise for those shells only.
 
 The `zshconf-edit` helper opens overlay files in your `$VISUAL`/`$EDITOR` — no need to remember the paths:
 
@@ -84,19 +87,17 @@ export EDITOR=vim
 export SOME_INTERNAL_URL=...
 ```
 
-Patterns worth knowing: the overlay directory can itself be a **private git repo** (public core + private personal layer, synced across machines); secrets belong in `env.zsh` (`chmod 600`) or, better, a secret manager such as macOS Keychain — never in either repo.
+The overlay can be its own private git repo. Secrets belong in `env.zsh` (`chmod 600`) or a secret manager, never in either repo.
 
 Your own Starship config? If `~/.config/starship.toml` exists (or `STARSHIP_CONFIG` is set), it wins; otherwise the repo's config is used.
 
 ## Uninstall
 
 ```sh
-rm ~/.zshrc                             # the stub
-rm ~/.zprofile.zwc 2>/dev/null          # stale bytecode, if any
-# remove the marked "zshconf env" block from ~/.zprofile (keep your own lines)
-# remove the marked "zshconf bash-login" stub from ~/.bash_profile and/or ~/.profile
-mv ~/.zshrc.pre-zshconf ~/.zshrc        # restore your old config (if any)
-rm -rf ~/.local/share/zshconf        # the clone
+rm ~/.zshrc
+mv ~/.zshrc.pre-zshconf ~/.zshrc        # if it exists
+# remove the marked zshconf blocks from ~/.zprofile and ~/.bash_profile (or ~/.profile)
+rm -rf ~/.local/share/zshconf
 ```
 
 Your overlay (`~/.config/zsh/`) is yours; keep or delete it.
@@ -108,7 +109,7 @@ just test        # full suite (what CI runs)
 just test-bare   # CI's toughest cell locally: bare Linux in Docker
 ```
 
-See [docs/CHEATSHEET.md](docs/CHEATSHEET.md) for every command, alias, and keybinding, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit — notably the load-order constraints in `init.zsh` — and [CONTRIBUTING.md](CONTRIBUTING.md) for the scope policy before opening a PR.
+See [docs/CHEATSHEET.md](docs/CHEATSHEET.md) for every command and keybinding, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit, and [CONTRIBUTING.md](CONTRIBUTING.md) for the scope policy.
 
 ## License
 

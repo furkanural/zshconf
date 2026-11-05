@@ -1,13 +1,8 @@
-# ── Model presets — switch Claude Code (or any Anthropic-API tool) between
-# endpoints/models. Presets are env files in
-# $XDG_CONFIG_HOME/cliproxy-presets/<name>.env holding ANTHROPIC_BASE_URL /
-# ANTHROPIC_AUTH_TOKEN / ANTHROPIC_DEFAULT_*_MODEL. The files may contain
-# tokens — they are created mode 600 and live outside any repo.
-#   modelpreset                 list presets
-#   modelpreset <name>          load a preset into the current shell
-#   modelpreset add <name>      create a preset (interactive prompts)
-#   modelpreset edit <name>     open a preset in $EDITOR
-#   modelpreset remove <name>   delete a preset (asks first)
+# Switch Claude Code (or any Anthropic-API tool) between endpoints/models.
+# Presets: $XDG_CONFIG_HOME/cliproxy-presets/<name>.env (mode 600).
+#   modelpreset                 list
+#   modelpreset <name>          load into the current shell
+#   modelpreset add|edit|remove <name>
 modelpreset() {
   emulate -L zsh
   local dir="${XDG_CONFIG_HOME:-$HOME/.config}/cliproxy-presets"
@@ -37,7 +32,6 @@ modelpreset() {
           for key in ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN \
                      ANTHROPIC_DEFAULT_OPUS_MODEL ANTHROPIC_DEFAULT_SONNET_MODEL \
                      ANTHROPIC_DEFAULT_HAIKU_MODEL; do
-            # Hide token input on a real terminal; plain read when piped.
             if [[ "$key" == *AUTH_TOKEN* && -t 0 ]]; then
               read -rs "value?$key (empty to skip): " || return 1
               print
@@ -73,10 +67,8 @@ modelpreset() {
       ;;
   esac
 
-  # No subcommand: list, or load <name>.
   [[ -d "$dir" ]] || { echo "Preset directory not found: $dir (try: modelpreset add <name>)" >&2; return 1; }
 
-  # With an arg: validate + load. Hard error → non-zero; unknown name → print list.
   if [[ -n "$action" ]]; then
     if [[ "$action" == */* ]]; then
       echo "Invalid preset name: $action" >&2
@@ -94,13 +86,11 @@ modelpreset() {
     echo "Preset not found: $action" >&2
   fi
 
-  # Reached with no arg (listing) or unknown preset (hint after error).
   echo "Available presets:"
   (( ${#presets} )) && print -l "${presets[@]}" || echo "  (none)"
-  [[ -z "$action" ]]   # 0 for plain listing, 1 when arrived via "not found"
+  [[ -z "$action" ]]   # 1 when reached via "not found"
 }
 
-# Tab-complete subcommands + preset names.
 _modelpreset() {
   local dir="${XDG_CONFIG_HOME:-$HOME/.config}/cliproxy-presets"
   local -a presets
@@ -122,7 +112,7 @@ _modelpreset() {
     esac
   fi
 }
-# compdef exists only after Tier 1 zicompinit; zicompdef queues it for zicdreplay.
+# compdef exists only after Tier 1; zicompdef queues it until then.
 if (( ${+functions[compdef]} )); then
   compdef _modelpreset modelpreset
 elif (( ${+functions[zicompdef]} )); then

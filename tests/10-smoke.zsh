@@ -1,7 +1,5 @@
 #!/usr/bin/env zsh
-# Layer 2: the config boots cleanly in a bare fixture (no overlay) and the
-# eager post-conditions hold. stderr must be EMPTY — almost every real
-# regression announces itself there.
+# Bare-fixture boot: exit 0, empty stderr, eager post-conditions.
 source "${0:A:h}/lib.zsh"
 
 t_make_zdot "$TWORK/zdot"
@@ -40,4 +38,9 @@ t_eq "flow control off, fcntl history lock" "${${(f)out}[10]}" "opts2=off/on"
 t_match "inherited PATH entries survive"    "${${(f)out}[11]}" "inherited=<1->"
 t_eq "git is noglob (git log HEAD^ works)"   "${${(f)out}[12]}" "gitalias=noglob git"
 t_eq "autosuggest manual rebind on"          "${${(f)out}[13]}" "asmanual=1"
+
+lang_after() { LANG="$1" t_boot "$TWORK/zdot" "$TWORK/xdg" 'print -r -- "$LANG"' }
+t_eq "LANG: user's UTF-8 locale kept"  "$(lang_after de_DE.UTF-8)" "de_DE.UTF-8"
+t_eq "LANG: empty gets a default"      "$(lang_after '')"          "en_US.UTF-8"
+t_match "LANG: non-UTF-8 upgraded"     "$(lang_after C)"           "(C.UTF-8|en_US.UTF-8)"
 t_done

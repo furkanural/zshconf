@@ -1,5 +1,4 @@
 #compdef gbclean
-# Completion for gbclean (functions/gbclean): optional force flag, or help.
 
 _arguments -s \
   '(- *)'{-h,--help}'[show usage]' \

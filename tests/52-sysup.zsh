@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# sysup: native/topgrade backends, status propagation, and no real updates.
+# sysup: both backends, status propagation, fake brew/topgrade/zinit.
 source "${0:A:h}/lib.zsh"
 
 fpath=("$REPO/functions" $fpath)
@@ -70,7 +70,7 @@ out=$(sysup --native 2>&1); rc=$?
 t_nomatch "--native overrides SYSUP_BACKEND" "$(<$log)" "*topgrade*"
 unset SYSUP_BACKEND
 
-# Minimal PATH so a real topgrade on the host is never found (or run).
+# No topgrade on PATH
 rm -f "$bin/topgrade"
 path=("$bin" /usr/bin /bin)
 rehash

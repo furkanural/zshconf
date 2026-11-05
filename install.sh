@@ -1,26 +1,10 @@
 #!/usr/bin/env zsh
-# install.sh — wire ~/.zshrc to this repo via a 3-line stub, and the login
-# profiles (~/.zprofile, ~/.bash_profile, ~/.profile) to the repo's
-# login-path.sh + the env overlay. Idempotent.
-#
-# Does exactly five things:
-#   1. Backs up any existing (non-stub) ~/.zshrc, then writes the stub
-#   2. Appends (or refreshes) a marked block in ~/.zprofile that sources
-#      $repo/login-path.sh (Homebrew + mise ahead of path_helper's /usr/bin)
-#      and then the env overlay — append-only, never rewritten wholesale,
-#      because ~/.zprofile holds user content (e.g. `brew shellenv`)
-#   3. Appends (or refreshes) a marked one-line stub sourcing login-path.sh in
-#      the login-bash profile (~/.bash_profile, else ~/.bash_login, else
-#      ~/.profile), and in ~/.profile too when it exists separately — `sh -l`
-#      reads that one. `bash -lc …` is how agent tools and editors run hooks.
-#   4. Creates the local overlay directory and a commented ~/.config/zsh/env.zsh
-#   5. Prints what it did
-# Logic lives in the repo (login-path.sh, init.zsh); the stubs never change.
-#
-# Deliberate non-goals: installing Homebrew or tools (the config degrades
-# gracefully without them), installing Zinit (the config bootstraps it on
-# first run), migrating an existing config (your old file is backed up —
-# move what you need into the overlay directory).
+# Wires the dotfiles to this repo. Idempotent; never deletes user content.
+#   ~/.zshrc                       3-line stub (existing file backed up)
+#   ~/.zprofile                    marked block: login-path.sh, then env.zsh
+#   ~/.bash_profile | ~/.profile   marked 1-line stub: login-path.sh
+#   ~/.config/zsh/                 overlay dir + commented env.zsh
+# Does not install tools or Zinit, or migrate an old config.
 
 emulate -L zsh
 setopt err_exit nounset pipefail
@@ -31,21 +15,17 @@ zprofile="$HOME/.zprofile"
 overlay="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
 marker="# Managed by the zshconf installer"
 env_marker="# zshconf env (managed by install.sh)"
-env_version=2    # v1: env.zsh only; v2: login-path.sh first, then env.zsh
+env_version=2
 bash_marker="# zshconf bash-login (managed by install.sh)"
-bash_version=3   # v1 inlined the logic; v2 sourced bash-login.sh; v3 login-path.sh
+bash_version=3
 
-# Login bash reads exactly one of these, first match wins. Target that one so
-# the block is actually read; create ~/.bash_profile when none exists.
+# Login bash reads the first of these that exists.
 bash_profile="$HOME/.bash_profile"
 for _f in "$HOME/.bash_profile" "$HOME/.bash_login" "$HOME/.profile"; do
   [[ -f "$_f" ]] && { bash_profile="$_f"; break }
 done
 unset _f
-# `sh -l` (bash in POSIX mode on macOS, dash on Debian) reads ~/.profile
-# only. When that file exists alongside a ~/.bash_profile, cover it too;
-# when it doesn't, don't create one — a new ~/.profile would change nothing
-# for bash (already served) and `sh -l` is rare enough not to warrant a file.
+# `sh -l` reads only ~/.profile; cover it when it exists separately.
 sh_profile=""
 [[ "$bash_profile" != "$HOME/.profile" && -f "$HOME/.profile" ]] && sh_profile="$HOME/.profile"
 
@@ -53,11 +33,7 @@ stub="$marker — personal config goes in $overlay/local.d, not here.
 export ZSHCONF=\"$repo\"
 [[ -r \"\$ZSHCONF/init.zsh\" ]] && source \"\$ZSHCONF/init.zsh\""
 
-# Sourced by login zsh — incl. the `zsh -lc` GUI apps like Zed spawn to read
-# your environment, which never reaches ~/.zshrc. login-path.sh first so
-# Homebrew + mise are in front of path_helper's /usr/bin (and so env.zsh can
-# call tools from them), then the env overlay. Both guarded so a
-# login+interactive shell doesn't run them twice (init.zsh / dev-tools.zsh).
+# login-path.sh first so env.zsh can call tools from brew/mise.
 env_block="# >>> $env_marker, v$env_version >>>
 [ -r \"$repo/login-path.sh\" ] && . \"$repo/login-path.sh\"
 if [[ -z \${ZSHCONF_ENV_SOURCED:-} && -r \"\${XDG_CONFIG_HOME:-\$HOME/.config}/zsh/env.zsh\" ]]; then
@@ -70,7 +46,6 @@ if [[ -f "$zshrc" && "$(<$zshrc)" == *"$marker"* ]]; then
   if [[ "$(<$zshrc)" == "$stub" ]]; then
     print -P "%F{green}==>%f ~/.zshrc stub already in place; nothing to do."
   else
-    # Our stub, but stale (repo moved, or stub format changed): rewrite.
     print -r -- "$stub" > "$zshrc"
     print -P "%F{green}==>%f Refreshed the ~/.zshrc stub (now points at $repo)."
   fi
@@ -78,7 +53,6 @@ elif [[ -e "$zshrc" ]]; then
   backup="$HOME/.zshrc.pre-zshconf"
   [[ -e "$backup" ]] && backup="$backup.$(date +%Y%m%d-%H%M%S)"
   mv "$zshrc" "$backup"
-  # Stale bytecode of the replaced file would only confuse; drop it.
   [[ -f "$zshrc.zwc" ]] && rm -f "$zshrc.zwc"
   print -r -- "$stub" > "$zshrc"
   print -P "%F{green}==>%f Backed up existing ~/.zshrc to ${backup/#$HOME/~}"
@@ -88,23 +62,13 @@ else
   print -P "%F{green}==>%f Wrote the ~/.zshrc stub (sources $repo/init.zsh)."
 fi
 
-# Sourced by LOGIN bash — `bash -lc …` is how editors, agent tools (Orca,
-# Claude Code, Codex) and the git hooks they run get a shell. The stub mirrors
-# the ~/.zshrc one: a single line pointing at the repo, so the logic (in
-# login-path.sh — see its header for the path_helper story) updates with
-# the repo and the user never re-runs the installer for it. POSIX sh: the
-# stub may land in ~/.profile, which `sh -l` reads too.
 bash_block="# >>> $bash_marker, v$bash_version >>>
 [ -r \"$repo/login-path.sh\" ] && . \"$repo/login-path.sh\"
 # <<< $bash_marker <<<"
 
-# install_block <file> <marker> <block> <label>
-# Append the marked block, refresh it if stale, else leave alone. Append-only:
-# the file holds user content. Stale means the block on disk is not this
-# one byte-for-byte: the version in its start line was bumped, or a path
-# baked into it is wrong because the repo moved. Substring tests, not grep:
-# some environments shadow grep with ugrep, which treats a leading '#' in
-# the pattern as a comment — and ours starts with one.
+# install_block <file> <marker> <block> <label>: append the block, replace
+# it in place when it differs (version bump or moved repo), else no-op.
+# Substring tests, not grep: ugrep treats a leading '#' pattern as a comment.
 install_block() {
   local file="$1" mk="$2" block="$3" label="$4"
   local content="" pretty="${file/#$HOME/~}"
@@ -116,8 +80,6 @@ install_block() {
     if [[ "$content" == *"$block"* ]]; then
       print -P "%F{green}==>%f $pretty $label block already in place; nothing to do."
     else
-      # Stale block (version bumped, or repo moved): replace it in place,
-      # keep everything before and after it.
       for line in "${(@f)content}"; do
         if [[ $seen_end -eq 1 ]]; then
           after+=("$line")
@@ -129,7 +91,6 @@ install_block() {
           before+=("$line")
         fi
       done
-      # Drop trailing blank lines from `before` so we don't accumulate gaps.
       while (( ${#before} )) && [[ -z "${before[-1]}" ]]; do before=("${before[1,-2]}"); done
       kept=("${before[@]}" "$block" "${after[@]}")
       print -r -- "${(F)kept}" > "$file"
@@ -160,13 +121,9 @@ fi
 if [[ -f "$overlay/env.zsh" ]]; then
   print -P "%F{green}==>%f Env file exists: ${overlay/#$HOME/~}/env.zsh"
 else
-  print -r -- "# Env overlay — sourced by LOGIN shells (from ~/.zprofile) and by
-# non-login interactive shells (from init.zsh). This is where exports that
-# GUI apps must see belong (Zed, VS Code read a login shell's environment);
-# local.d only ever runs inside ~/.zshrc. Keep this file env-only — no
-# aliases, prompts, or interactive code: non-interactive shells source it.
-#
-# Example (Keychain-backed secrets):
+  print -r -- "# Exports GUI apps must see (sourced by login zsh and by ~/.zshrc).
+# Env only: no aliases, prompts or interactive code.
+# Example:
 #   export MY_API_KEY=\"\$(security find-generic-password -a \"\$USER\" -s 'my-key' -w)\"" > "$overlay/env.zsh"
   print -P "%F{green}==>%f Created ${overlay/#$HOME/~}/env.zsh — put exports GUI apps need here (it is sourced by login shells)."
 fi

@@ -1,3 +1,3 @@
-# mkdir + cd into it.
+# mkcd <dir>: mkdir -p and cd.
 [[ -n "$1" ]] || { _usage "mkcd <dir>"; return; }
 mkdir -p "$1" && cd "$1"

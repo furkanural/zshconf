@@ -1,77 +1,66 @@
 # Architecture
 
-The design in one sentence: **a layered core that is sourced, never edited, with an overlay seam for everything personal** — updates are always a fast-forward pull because user changes never touch tracked files.
+A sourced core plus an overlay for everything personal. Updates are always a fast-forward pull because user changes never touch tracked files.
 
 ```
-~/.zshrc (3-line stub, user-owned)
-  └── $ZSHCONF/init.zsh (the manifest)
-        ├── ~/.config/zsh/pre.zsh          (overlay pre-hook, optional)
-        ├── ~/.config/zsh/env.zsh          (env seam: also sourced from ~/.zprofile)
-        ├── modules/*.zsh                  (lifecycle phases, strict order)
-        ├── modules/tools/*.zsh            (feature-detected integrations)
-        ├── modules/aliases/*.zsh          (by domain)
-        ├── modules/os/{darwin,linux}.zsh  (the ONLY $OSTYPE dispatch)
-        ├── functions/* → autoloaded       (one file per function)
-        ├── completions/_* → on fpath      (Tab completers for those functions)
-        └── ~/.config/zsh/local.d/*.zsh    (overlay drop-ins, sourced LAST)
-
-~/.zprofile (marked block, user-owned)          ~/.bash_profile | ~/.profile (1-line stub)
-  ├── $ZSHCONF/login-path.sh                       └── $ZSHCONF/login-path.sh
-  └── ~/.config/zsh/env.zsh                    (PATH for login shells: brew + mise shims)
+~/.zshrc (stub)                 ~/.zprofile (block)          ~/.bash_profile | ~/.profile (stub)
+  └── init.zsh                    ├── login-path.sh            └── login-path.sh
+        ├── ~/.config/zsh/pre.zsh └── ~/.config/zsh/env.zsh
+        ├── ~/.config/zsh/env.zsh
+        ├── modules/*.zsh
+        ├── modules/tools/*.zsh
+        ├── modules/aliases/*.zsh
+        ├── modules/os/{darwin,linux}.zsh
+        ├── functions/*   (autoloaded)
+        ├── completions/_*
+        └── ~/.config/zsh/local.d/*.zsh   (last)
 ```
 
-## Load order is load-bearing
+## Load order
 
-`init.zsh` is an explicit manifest — not a numbered glob — so every ordering constraint is documented at the line that enforces it. The hard constraints:
+`init.zsh` is an explicit manifest; each constraint is commented where it is enforced:
 
-1. `path` before any `$+commands[...]` guard (which is nearly everything).
-2. `mise` before Starship, so the prompt sees shimmed tools.
-3. `LS_COLORS` before `completion-styles.zsh` — the `list-colors` zstyle expands `${(s.:.)LS_COLORS}` **at definition time**, not at completion time. This is also why `LS_COLORS` is the one value the overlay must set in `pre.zsh` rather than `local.d`.
-4. zcompdump hygiene (stale-dump deletion) before `zicompinit` fires.
-5. `zmodload zsh/complist` before compinit runs.
-6. Helper functions defined before the code that references them (`_zinit_evalcache` before `tools/fzf.zsh`, etc.).
-7. eza zstyles before Tier 3 loads `OMZP::eza`.
-8. The overlay's `local.d` last, so it can override anything.
+1. `path` before any `$+commands[...]` guard.
+2. `mise` before Starship.
+3. `LS_COLORS` before `completion-styles.zsh` — the `list-colors` zstyle expands it at definition time. This is why `pre.zsh` exists.
+4. Compdump hygiene and `zmodload zsh/complist` before Tier 1's compinit.
+5. `local.d` last.
 
-Modules are sourced at **top level**, never inside a function — `typeset -U path` and friends inside a function would create function-locals instead of acting on the shell's globals.
+Modules are sourced at top level, never inside a function, so `typeset -U path` acts on globals.
 
-## The turbo tiers
+## Turbo tiers
 
-All plugins load via Zinit's turbo mode, _after_ the first prompt paints:
+All plugins load via Zinit turbo after the first prompt:
 
-Tiers are numbered 1–3 everywhere (code comments, tests, this doc); the zinit `wait` value is in parentheses.
+- **Tier 1** (`wait'0a'`): compinit (`-C`), completions, fzf-tab.
+- **Tier 2** (`wait'0b'`): OMZ git, history-substring-search, fast-syntax-highlighting, then autosuggestions.
+- **Tier 3** (`wait'1'`): docker-compose, ruby, rails, extract, eza, command-not-found.
 
-- **Tier 1** (`wait'0a'`) — anything needed before the first Tab press: compinit (`-C`, trusting the compdump the hygiene pass validated), completions, fzf-tab.
-- **Tier 2** (`wait'0b'`) — interactive UX: OMZ git lib/aliases, history-substring search, syntax highlighting, then autosuggestions (in that order — see below).
-- **Tier 3** (`wait'1'`) — everything that can wait a second: docker-compose, ruby, rails, extract, eza, command-not-found. The last one carries the final autosuggest rebind.
+Autosuggestions bind widgets twice (after Tier 2 and after Tier 3) instead of on every prompt (`ZSH_AUTOSUGGEST_MANUAL_REBIND`). An overlay plugin with `wait'1'` or later that defines widgets needs `atload'_zsh_autosuggest_bind_widgets'`.
 
-**Autosuggest binding:** by default zsh-autosuggestions re-wraps every zle widget on every precmd; with fast-syntax-highlighting's wrappers that is ~600 widgets and ~20 ms per prompt. We set `ZSH_AUTOSUGGEST_MANUAL_REBIND` (the plugin tests for the variable's *existence*, so an overlay that wants per-prompt rebinding must `unset` it — `=0` is not enough) and bind exactly twice: when Tier 2 loads (fsh is already loaded, so autosuggest wraps outermost — the order both plugins document), and after Tier 3 (`_autosuggest_rebind`) so widgets that tool inits define in between (fzf's `Ctrl+R`/`Ctrl+T`, zoxide) are wrapped too. Widgets defined at source time (keybindings.zsh, tools/*, `local.d`) all exist before any tier fires, so they are covered. Only widgets created *after* that final rebind are missed — in practice a plugin registered from `local.d` with `wait'1'` or later; give it `atload'_zsh_autosuggest_bind_widgets'`.
+Every zinit idiom lives in `modules/plugins.zsh`; other modules use only `_zinit_evalcache`.
 
-Deferred loading has a subtle consequence the overlay exploits: overlay zstyles set at source time still land _before_ Tier 2/3 plugins read them.
+Zinit is cloned on first run and reset to a pinned tag, then floats with `zinit self-update`. Plugins float at HEAD.
 
-**Containment rule:** every zinit-specific idiom (ices, snippets, the null-plugin evalcache trick) lives in `modules/plugins.zsh`. Other modules interact with zinit only through `_zinit_evalcache`. If the project ever migrates plugin managers, the blast radius is one file.
+## Precedence
 
-**Bootstrap pin (TOFU):** a fresh machine clones Zinit and resets to a pinned release tag — first-run code execution is deterministic. The reset stays on the default branch so `zinit self-update` keeps working; after first install the pin is trust-on-first-use, and plugins float at HEAD (documented trade-off — a short, well-known plugin list in exchange for not maintaining a dozen version pins).
-
-## Precedence chains
-
-- **Starship config:** explicit `$STARSHIP_CONFIG` → user's `~/.config/starship.toml` → repo default. No starship → minimal fallback `PS1`.
-- **Overlay:** `pre.zsh` (before core; startup-consumed values only) → core → `local.d/*.zsh` in name order (winner takes all). Only values the core reads during startup need `pre.zsh`; everything else overrides fine from `local.d` because it's read at call time.
-- **Env seam:** `env.zsh` is sourced from `~/.zprofile` (wired by `install.sh`) so login shells get it — including the login shell GUI apps like Zed and VS Code spawn to read your environment — and from `init.zsh` so non-login interactive shells get it too. A `ZSHCONF_ENV_SOURCED` guard keeps login+interactive shells from running it twice. Env-only: non-interactive shells source it.
-- **Login-path seam:** `$ZSHCONF/login-path.sh` (POSIX sh) is sourced from the `~/.zprofile` block (before `env.zsh`) and from a one-line stub in the login-bash profile (`~/.bash_profile`, else `~/.bash_login`, else `~/.profile`; `~/.profile` additionally when both exist, for `sh -l`) — the same stub-vs-logic split as `~/.zshrc`/`init.zsh`, so the logic updates with the repo. Rationale: `zsh -lc` (GUI apps reading the env) and `bash -lc` (agent tools, editors, git hooks) read a login profile but never `~/.zshrc`, and on macOS `path_helper` re-prepends `/usr/bin` to the inherited PATH, so system Ruby/Python shadow mise and Homebrew even though the parent zsh had them first. `login-path.sh` re-runs `brew shellenv` and `mise activate bash --shims` (shim mode: a non-interactive shell never reaches the prompt hook full activation needs; the `export PATH=…` it emits is valid sh/zsh). It carries no PATH list of its own and is guarded (`ZSHCONF_LOGIN_PATH_SOURCED`); in a login+interactive zsh, `path.zsh` and the full `mise activate zsh` run afterwards and remain the authority.
+- **Starship config:** `$STARSHIP_CONFIG` → `~/.config/starship.toml` → repo default. Without starship, a minimal `PS1`.
+- **Overlay:** `pre.zsh` → core → `local.d/*.zsh` in name order.
+- **env.zsh:** sourced from `~/.zprofile` (login zsh, incl. GUI apps) and `init.zsh`, once per shell.
+- **login-path.sh:** sourced from `~/.zprofile` and the bash/sh profile. Restores Homebrew and mise shims ahead of macOS `path_helper`'s `/usr/bin` for login shells that never reach `~/.zshrc` (`zsh -lc`, `bash -lc`). POSIX sh, no forks beyond mise, guarded. `path.zsh` remains the authority in interactive zsh.
 
 ## Bytecode
 
-`init.zsh` ends by background-compiling any module whose `.zwc` is stale. This is safe because `source` uses a `.zwc` only when it is at least as new as its source — stale bytecode is silently ignored, never wrongly used. `zshconf-update` recompiles eagerly after a pull. `*.zwc` is gitignored.
+`init.zsh` background-compiles stale `.zwc` files; `source` ignores a `.zwc` older than its source. `zshconf-update` compiles eagerly. `*.zwc` is gitignored.
 
 ## OS support
 
-Tiered: macOS is first-class (daily-driven); Linux is supported and CI-tested; WSL should behave like Linux (untested); BSD is out of scope. The mechanism: **feature detection over OS detection** — candidate paths with `(N)` glob qualifiers, `$+commands` guards, `col(1)` detection — and a single `$OSTYPE` dispatch in the manifest selecting one leaf module (`modules/os/`). OS conditionals inside generic modules are a review reject.
+macOS first-class, Linux CI-tested, WSL expected to behave like Linux, BSD out of scope. Feature detection over OS detection: `(N)` globs, `$+commands`, one `$OSTYPE` dispatch in the manifest selecting `modules/os/`.
 
-One feature-detection trap: on macOS `/home` is an autofs mount, and a **literal** path lookup under it (`/home/linuxbrew/...(N)`) blocks on directory services for ~50 ms on every startup. Linuxbrew candidates are therefore written as a bracket glob, `/home/[l]inuxbrew/...(N)`, which `readdir`s instead and returns instantly. The parse test rejects a literal `/home/linuxbrew` in startup files.
+A literal `/home/linuxbrew` path stalls ~50 ms on macOS (autofs); startup files use `/home/[l]inuxbrew`, and the parse test enforces it.
 
-PATH is ours first, inherited second: the `path=(...)` list ends with the inherited `$path`, so entries a terminal (Ghostty) or an editor's integrated terminal appended survive, but `typeset -U` keeps our ordering for anything both define. The flip side: a tool environment that *prepended* to PATH before spawning this shell (`nix-shell --run zsh`, a venv subshell) keeps its directory on PATH but does not outrank Homebrew's copy of the same binary. Tools that modify the running shell (`mise`, `direnv`, `venv activate`) are unaffected — they run after `path.zsh`.
+PATH is ours first, inherited second: `path.zsh` appends the parent's `$path`, and `typeset -U` keeps our order for anything both define.
 
 ## Testing
 
-`tests/run.zsh` (CI parity via `just test`): a parse gate over every file; an stderr-clean smoke boot in a fixture `ZDOTDIR` (an empty stderr catches most real regressions); a tier-convergence test that feeds prompt cycles to an interactive shell so turbo actually fires; overlay-contract tests; installer scenarios against a sandbox `HOME`; function tests against git fixtures. CI runs a 2×2 matrix — ubuntu/macos × bare/full — where the bare cells exercise every degradation guard, plus a report-only zsh-bench job.
+`tests/run.zsh`: parse gate, stderr-clean smoke boot in a fixture `ZDOTDIR`, tier convergence with prompt cycles, overlay contract, installer scenarios in a sandbox `HOME`, function tests against git fixtures, Tab-completion tests in a pty. CI runs ubuntu/macos × bare/full plus a report-only benchmark.

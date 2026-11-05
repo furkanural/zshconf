@@ -1,7 +1,5 @@
-# Update everything: config repo + packages/plugins + completions.
-# Native (default): brew + zinit directly. Topgrade (opt-in: `sysup --topgrade`,
-# or SYSUP_BACKEND=topgrade in ~/.config/zsh/local.d/): plain `topgrade` with
-# its own defaults — customize it in ~/.config/topgrade.toml, not here.
+# sysup [--native|--topgrade]: update this repo, then Homebrew + Zinit
+# (native) or everything Topgrade detects, then completions.
 emulate -L zsh
 setopt extendedglob
 
@@ -33,7 +31,6 @@ esac
 local -a results
 integer failed=0 rc
 
-# _sysup_lane <name>: record the exit status ($rc) of the lane just run.
 _sysup_lane() {
   if (( rc )); then
     results+=("$1: failed")
@@ -43,7 +40,6 @@ _sysup_lane() {
   fi
 }
 
-# Config lane only once the repo has a remote to pull from.
 if [[ -n "${ZSHCONF:-}" ]] && git -C "$ZSHCONF" remote 2>/dev/null | grep -q .; then
   zshconf-update; rc=$?
   _sysup_lane zshconf
@@ -53,7 +49,6 @@ else
 fi
 
 if [[ "$backend" == topgrade ]]; then
-  # Topgrade owns Homebrew, Zinit, and every other tool it detects.
   print -P "%F{cyan}==> Topgrade...%f"
   if (( $+commands[topgrade] )); then
     topgrade; rc=$?

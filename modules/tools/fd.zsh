@@ -1,4 +1,3 @@
-# ── fd — faster find.
 if (( $+commands[fd] )); then
   alias fdf='fd --type f'
   alias fdd='fd --type d'

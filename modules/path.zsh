@@ -1,18 +1,10 @@
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 export PNPM_HOME="${PNPM_HOME:-$HOME/Library/pnpm}"
 
-# ── PATH  (Android/Maestro/pnpm → brew AS (+gcloud SDK) → brew Intel → brew Linux → system → user-local → inherited; (N) skips missing dirs)
-# Linuxbrew paths are written /home/[l]inuxbrew on purpose: on macOS /home is
-# an autofs mount (auto_home), and a LITERAL path lookup under it blocks on
-# directory services for ~50 ms every startup. A bracket glob readdir()s
-# instead and returns instantly. Never "simplify" it back to a literal.
-# Inherited entries ($path, last) survive — e.g. the dirs a terminal (Ghostty)
-# or an editor's integrated terminal appended — but never outrank ours;
-# typeset -U keeps the first occurrence. Consequence: a tool env that
-# PREPENDED to PATH before spawning this shell (nix-shell --run zsh, a venv
-# subshell) keeps its dir on PATH but loses precedence to Homebrew's binary.
-# Deliberate: honouring arbitrary parent order would let macOS's path_helper
-# or a stray /usr/local/bin jump ahead of /opt/homebrew/bin.
+# Ours first, inherited ($path) last; typeset -U keeps the first occurrence,
+# so a parent's ordering never outranks ours.
+# /home/[l]inuxbrew: a literal /home path stalls ~50 ms on macOS (autofs);
+# the bracket glob does not.
 path=(
   $ANDROID_HOME/emulator(N)
   $ANDROID_HOME/platform-tools(N)
@@ -37,13 +29,12 @@ path=(
 typeset -U path
 export PATH
 
-# ── FPATH  (user → repo → brew → system; must precede zicompinit; blockf blocks plugin edits)
 fpath=(
   ${ZDOTDIR:-$HOME}/.zsh/completions(N)
-  $ZSHCONF/completions(N)                 # completers for this repo's functions (_sysup, …)
+  $ZSHCONF/completions(N)
   /opt/homebrew/share/zsh/site-functions(N)
   /usr/local/share/zsh/site-functions(N)
-  /home/[l]inuxbrew/.linuxbrew/share/zsh/site-functions(N)   # [l]: see autofs note above
+  /home/[l]inuxbrew/.linuxbrew/share/zsh/site-functions(N)
   $fpath
 )
 typeset -U fpath

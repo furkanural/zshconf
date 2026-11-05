@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# Layer 1: every file must parse (zsh -n).
+# Every file parses; login-path.sh as POSIX sh.
 source "${0:A:h}/lib.zsh"
 
 for f in "$REPO"/init.zsh "$REPO"/modules/**/*.zsh(.) "$REPO"/functions/*(.) "$REPO"/completions/*(.N) \
@@ -10,7 +10,6 @@ for f in "$REPO"/init.zsh "$REPO"/modules/**/*.zsh(.) "$REPO"/functions/*(.) "$R
     T_FAIL=1
   fi
 done
-# login-path.sh is POSIX sh (sourced by login zsh, bash and `sh -l`): check with sh.
 if ! sh -n "$REPO/login-path.sh" 2>"$TWORK/parse-err"; then
   print -r -- "  FAIL: login-path.sh does not parse as sh:"
   sed 's/^/    /' "$TWORK/parse-err"
@@ -18,10 +17,7 @@ if ! sh -n "$REPO/login-path.sh" 2>"$TWORK/parse-err"; then
 fi
 (( T_FAIL )) || print -r -- "  ok: all files parse"
 
-# A literal /home/linuxbrew lookup triggers macOS's autofs automounter
-# (~50 ms per startup); the startup path must use the /home/[l]inuxbrew glob.
-# login-path.sh is exempt: POSIX sh has no (N) glob, and its linuxbrew probe
-# is the last candidate, reached only when no other brew exists.
+# Startup files must use the /home/[l]inuxbrew glob (autofs stall otherwise).
 hits=$(grep -n '/home/linuxbrew' "$REPO"/init.zsh "$REPO"/modules/**/*.zsh(.) | grep -v '^[^:]*:[0-9]*:[[:space:]]*#')
 t_eq "no literal /home/linuxbrew in startup files (autofs)" "$hits" ""
 t_done

@@ -1,16 +1,13 @@
 #!/usr/bin/env zsh
-# Test runner: zsh tests/run.zsh
-# CI runs exactly this; keep it runnable on a laptop with no arguments.
+# Test runner; CI runs exactly this.
 cd "${${(%):-%N}:A:h:h}"
 
-# Scrub state leaked from a parent shell that runs this very config.
 unset HEROKU_AC_ANALYTICS_DIR HEROKU_AC_COMMANDS_PATH STARSHIP_CONFIG STARSHIP_SESSION_KEY \
       ZSHCONF LS_COLORS EDITOR VISUAL BAT_THEME BAT_STYLE MANPAGER T_SENT \
       FZF_DEFAULT_OPTS FZF_DEFAULT_COMMAND FZF_CTRL_T_COMMAND FZF_ALT_C_COMMAND
 export TERM="${TERM:-xterm-256color}"
 
-# Cold start (CI): zinit + turbo plugins clone from the network on first
-# boot, which would pollute the stderr-clean assertions. Warm up once.
+# First boot clones zinit + plugins; do it once so stderr asserts stay clean.
 if [[ ! -d "$HOME/.local/share/zinit/plugins/zsh-users---zsh-autosuggestions" ]]; then
   print "== warmup: first boot clones zinit + plugins (network) =="
   warm="$(mktemp -d)"

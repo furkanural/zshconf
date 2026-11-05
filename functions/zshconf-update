@@ -1,7 +1,5 @@
-# Update the shared config: fast-forward pull + recompile stale bytecode.
-# --ff-only is deliberate: if the repo has local edits, update stops instead
-# of merging — the core is sourced, never edited (personal config belongs in
-# ~/.config/zsh/local.d/).
+# zshconf-update: fast-forward pull + recompile. Refuses local edits or
+# commits; personal config belongs in the overlay.
 emulate -L zsh
 setopt localoptions extendedglob
 
@@ -9,8 +7,6 @@ local repo="${ZSHCONF:?ZSHCONF is not set — is the ~/.zshrc stub in place?}"
 
 print -P "%F{cyan}==> Updating zsh config ($repo)...%f"
 
-# --ff-only alone only catches local *commits*; uncommitted edits to tracked
-# files would survive a pull silently. Refuse those too.
 if [[ -n "$(git -C "$repo" status --porcelain --untracked-files=no 2>/dev/null)" ]]; then
   print -P "%F{red}Repo has local edits — not updating.%f They belong in ~/.config/zsh/local.d/."
   git -C "$repo" status --short --untracked-files=no

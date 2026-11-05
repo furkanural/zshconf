@@ -1,6 +1,5 @@
 #compdef rgg
-# Completion for rgg (functions/rgg): it forwards every argument to rg, so
-# reuse ripgrep's own completer when one is installed.
+# rgg forwards to rg: reuse its completer when present.
 
 if (( $+functions[_rg] )) || autoload -Uz +X _rg 2>/dev/null; then
   _rg "$@"

@@ -1,6 +1,5 @@
 #!/usr/bin/env zsh
-# The overlay contract: pre.zsh values consumed at startup are respected;
-# local.d drop-ins load in name order and override the core.
+# Overlay contract: pre.zsh respected, local.d in name order overrides core.
 source "${0:A:h}/lib.zsh"
 
 t_make_zdot "$TWORK/zdot"

@@ -1,4 +1,3 @@
-# ── fzf
 if (( $+commands[fzf] )); then
   export FZF_DEFAULT_OPTS='
     --height 40%
@@ -10,20 +9,18 @@ if (( $+commands[fzf] )); then
     --bind ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down
   '
 
-  # fd as source — faster, respects .gitignore.
   if (( $+commands[fd] )); then
     export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
     export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
     export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
   fi
 
-  # bat preview on Ctrl+T.
   if (( $+commands[bat] )); then
     export _FZF_PREVIEW_CMD='bat --color=always --style=plain,numbers --line-range=:500 {}'
     export FZF_CTRL_T_OPTS="--preview '$_FZF_PREVIEW_CMD'"
   fi
 
-  # Ctrl+F: file picker excluding hidden files, inserts path at cursor.
+  # Ctrl+F: file picker without hidden files, inserts at cursor.
   _fzf_file_no_hidden() {
     local cmd result
     cmd="${FZF_DEFAULT_COMMAND/--hidden /}"

@@ -1,30 +1,29 @@
 # Contributing
 
-Thanks for looking! A few things to know before opening a PR.
+## Scope
 
-## Scope policy (please read this one)
+An opinionated config, not a framework.
 
-This project is an **opinionated config, not a framework**. That means:
+- **Welcome:** bug fixes, portability (especially Linux), performance, degradation when a tool is missing, tests, doc fixes.
+- **Not accepted:** configuration knobs, personal-preference changes to the defaults, plugins that serve one stack. That is what the overlay (`~/.config/zsh/local.d/`) is for.
 
-- **Welcome:** bug fixes, portability fixes (especially Linux), performance improvements, better degradation when a tool is missing, test coverage, doc corrections.
-- **Not accepted:** configuration knobs ("add an option to disable X"), personal-preference changes to the shipped defaults, plugin additions that serve one stack. That's what the overlay is for — anything you'd ask a knob for can live in your `~/.config/zsh/local.d/` (see the README).
+Unsure? Open an issue first.
 
-If you're unsure which side of the line an idea falls on, open an issue first — it's a friendly conversation, not a gate.
+## Rules
 
-## Ground rules for changes
-
-- Read `docs/ARCHITECTURE.md` first — load order in `init.zsh` is load-bearing, and each constraint is commented where it's enforced.
-- Feature detection over OS detection. `$OSTYPE` appears in exactly one place (the manifest's dispatch); OS conditionals inside generic modules will be asked to move to `modules/os/`.
-- Zinit idioms stay in `modules/plugins.zsh` (containment rule).
-- New user-facing functions: one file in `functions/`, autoload style (bare body, no wrapper). If it takes options, add a `#compdef` completer as `completions/_<name>`.
+- Read `docs/ARCHITECTURE.md`; load order in `init.zsh` is load-bearing.
+- Feature detection over OS detection. `$OSTYPE` appears once, in the manifest; OS conditionals go in `modules/os/`.
+- Zinit idioms stay in `modules/plugins.zsh`.
+- New functions: one autoload-style file in `functions/`, with a `#compdef` completer in `completions/` if it takes options.
+- Comments explain what the code cannot: a non-obvious constraint or trap. No history, no restating the code.
 
 ## Tests
 
 ```sh
-just test        # full suite — must pass
-just test-bare   # bare-Linux cell in Docker; run it if you touched guards
+just test        # full suite, must pass
+just test-bare   # bare Linux in Docker; run it if you touched guards
 ```
 
-CI runs the suite on ubuntu/macos × bare/full. If you add behavior, add an assertion; if you fix a bug, add the assertion that would have caught it.
+New behavior gets an assertion; a bug fix gets the assertion that would have caught it.
 
-Optional: `just install-hooks` symlinks `hooks/pre-commit` — a fast staged-files-only check (zsh syntax, filename hygiene, file size, leaked secrets). It runs no tests; the suite stays your job before pushing.
+`just install-hooks` adds a fast pre-commit check (syntax, filenames, size, secrets).

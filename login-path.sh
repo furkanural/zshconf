@@ -1,47 +1,37 @@
-# login-path.sh — PATH for LOGIN shells that never reach ~/.zshrc.
+# PATH for login shells that never reach ~/.zshrc: `zsh -lc` (GUI apps),
+# `bash -lc` / `sh -lc` (agent tools, editors, git hooks). macOS path_helper
+# puts /usr/bin ahead of the inherited PATH; this puts Homebrew and mise
+# back in front. Sourced from the stubs install.sh writes.
 #
-# Sourced by the one-line stubs install.sh writes to ~/.zprofile and the
-# login-bash profile (~/.bash_profile, else ~/.bash_login, else ~/.profile).
-# Like init.zsh, this file is the repo's: the stubs never change, so updates
-# arrive with `zshconf-update`.
-#
-# Why it exists. Two kinds of shell read a login profile but not ~/.zshrc:
-#   - `bash -lc …` / `sh -lc …`: how agent tools (Orca, Claude Code, Codex),
-#     editors and the git hooks they spawn run commands.
-#   - `zsh -lc …`: how GUI apps (Zed, VS Code) read your environment.
-# On macOS /etc/profile and /etc/zprofile run path_helper, which re-prepends
-# /usr/bin (system Ruby, Python…) to the PATH those shells inherited — so
-# mise and Homebrew lose even though the parent interactive zsh had them
-# first. This puts them back in front.
-#
-# Rules:
-#   - POSIX sh only: ~/.profile is read by `sh -l`, and zsh sources this
-#     before any option is set, so nothing zsh- or bash-specific.
-#   - No PATH list of our own: modules/path.zsh stays the single authority
-#     for ordering; this file only re-runs the two tools' own shellenv.
-#   - Idempotent and cheap: a guard makes a login+interactive shell (which
-#     also runs path.zsh + dev-tools.zsh) skip the second pass.
+# POSIX sh. No forks except mise: `brew shellenv` costs ~40 ms for output
+# that depends only on the prefix, so its exports are written here (a test
+# keeps them identical).
 
 if [ -z "${ZSHCONF_LOGIN_PATH_SOURCED:-}" ]; then
   ZSHCONF_LOGIN_PATH_SOURCED=1
 
-  # Homebrew. Candidates in path.zsh order; linuxbrew last and only probed
-  # when the others are missing (a literal /home lookup costs ~50 ms on macOS
-  # via autofs).
-  for _zshconf_brew in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
-    if [ -x "$_zshconf_brew" ]; then
-      eval "$("$_zshconf_brew" shellenv)"
+  # Linuxbrew last: a /home lookup stalls ~50 ms on macOS (autofs).
+  for _zshconf_brew in /opt/homebrew /usr/local /home/linuxbrew/.linuxbrew; do
+    if [ -x "$_zshconf_brew/bin/brew" ]; then
+      export HOMEBREW_PREFIX="$_zshconf_brew"
+      export HOMEBREW_CELLAR="$_zshconf_brew/Cellar"
+      if [ -d "$_zshconf_brew/Homebrew" ]; then
+        export HOMEBREW_REPOSITORY="$_zshconf_brew/Homebrew"
+      else
+        export HOMEBREW_REPOSITORY="$_zshconf_brew"
+      fi
+      export PATH="$_zshconf_brew/bin:$_zshconf_brew/sbin${PATH+:$PATH}"
+      export INFOPATH="$_zshconf_brew/share/info:${INFOPATH:-}"
+      [ -z "${MANPATH-}" ] || { MANPATH="${MANPATH%"${MANPATH##*[!:]}"}"; export MANPATH=":${MANPATH#"${MANPATH%%[!:]*}"}"; }
       break
     fi
   done
   unset _zshconf_brew
 
-  # mise, in shim mode: a non-interactive shell never reaches the prompt hook
-  # the full activation relies on, so shims are the only thing that works
-  # here. `activate bash --shims` emits a plain `export PATH=…`, valid in sh
-  # and zsh too. An interactive zsh later runs the full `mise activate zsh`
-  # (dev-tools.zsh), which puts the real tool dirs ahead of the shims.
-  for _zshconf_mise in "$(command -v mise 2>/dev/null)" "$HOME/.local/bin/mise"; do
+  # Shim mode: a non-interactive shell has no prompt hook. An interactive
+  # zsh runs the full activation later and puts tool dirs ahead of shims.
+  # ~/.local/bin first: that is where mise.run installs.
+  for _zshconf_mise in "$HOME/.local/bin/mise" "$(command -v mise 2>/dev/null)"; do
     if [ -n "$_zshconf_mise" ] && [ -x "$_zshconf_mise" ]; then
       eval "$("$_zshconf_mise" activate bash --shims)"
       break

@@ -1,28 +1,19 @@
 #!/usr/bin/env zsh
-# bench.zsh — self-contained startup benchmark (replaces zsh-bench, which
-# deadlocks against zinit turbo mode — romkatv/zsh-bench#34 — and even on
-# empty configs in headless containers — romkatv/zsh-bench#31).
-#
-# Two metrics, $ITERS samples each, min/median reported:
-#   eager  — zsh -i -c exit: rc files sourced, turbo tiers still queued
-#   full   — prompt cycles fed until turbo tiers have fired (plugins loaded)
-#
-# Run from anywhere; expects the config already installed (~/.zshrc stub)
-# and warmed (zinit + plugins cloned — cold network clones would dominate).
+# Startup benchmark: eager (zsh -i -c exit) and full (prompt cycles until the
+# turbo tiers fire), min/median of $ITERS. Expects an installed, warmed config.
+# Replaces zsh-bench, which deadlocks against zinit turbo (romkatv/zsh-bench#34).
 
 emulate -L zsh
 zmodload zsh/datetime || exit 1
 
 typeset -ri ITERS=${ITERS:-10}
 
-# time_boot <mode>: one sample, prints milliseconds (integer)
 time_boot() {
   local -F start end
   start=$EPOCHREALTIME
   if [[ $1 == eager ]]; then
     zsh -i -c exit >/dev/null 2>&1
   else
-    # Feed prompt cycles so zinit's turbo tiers fire, then exit.
     { for _ in {1..30}; do print 'sleep 0.1'; done; print 'exit' } | \
       zsh -i >/dev/null 2>&1
   fi
@@ -30,7 +21,6 @@ time_boot() {
   print -r -- $(( (end - start) * 1000 ))
 }
 
-# median <numbers...>
 median() {
   local -a sorted=(${$(print -l -- "$@" | sort -n)})
   print -r -- ${sorted[$(( ($#sorted + 1) / 2 ))]}
