@@ -7,3 +7,6 @@
 # Defensive: secret-shaped files must be forced in, never drift in
 *.env
 secrets.*
+
+# Per-machine agent settings (Claude Code's *.local.json contract)
+.claude/settings.local.json

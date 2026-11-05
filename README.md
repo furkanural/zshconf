@@ -33,7 +33,10 @@ Optional extras:
 
 ```sh
 brew bundle --file "$ZSHCONF/Brewfile"   # the tools the config integrates with (works from any directory)
+curl -fsSL https://mise.run | sh         # mise, the way its docs recommend (not via Homebrew)
 ```
+
+mise is installed by its own script rather than Homebrew on purpose: that is what [mise's docs recommend](https://mise.jdx.dev/installing-mise.html) (official binary, newer, `mise self-update` works). It lands in `~/.local/bin`, which `path.zsh` and `login-path.sh` already know. Moving from a Homebrew mise? `brew uninstall mise && mise reshim` — the shims are symlinks to the binary and point at the old path until reshimmed.
 
 ## Update
 

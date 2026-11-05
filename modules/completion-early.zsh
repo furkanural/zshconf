@@ -31,7 +31,9 @@ _repair_clap_dynamic_completions() {
   local zdot="${ZDOTDIR:-$HOME}"
   local zcompdump="$zdot/.zcompdump"
 
-  if [[ -r "$zcompdump" ]] && command grep -q "_clap_dynamic_completer_" "$zcompdump" 2>/dev/null; then
+  # Substring test, not grep: no fork (~3 ms per startup), and immune to
+  # environments that shadow grep (install.sh has the same rule).
+  if [[ -r "$zcompdump" && "$(<$zcompdump)" == *_clap_dynamic_completer_* ]]; then
     rm -f "$zdot"/.zcompdump*(N)
     return 0
   fi

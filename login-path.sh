@@ -18,19 +18,36 @@
 #   - POSIX sh only: ~/.profile is read by `sh -l`, and zsh sources this
 #     before any option is set, so nothing zsh- or bash-specific.
 #   - No PATH list of our own: modules/path.zsh stays the single authority
-#     for ordering; this file only re-runs the two tools' own shellenv.
-#   - Idempotent and cheap: a guard makes a login+interactive shell (which
-#     also runs path.zsh + dev-tools.zsh) skip the second pass.
+#     for ordering; this file only sets what the two tools' own shellenv
+#     would.
+#   - Cheap: no forks. `brew shellenv` costs ~40 ms (a Ruby-free but still
+#     bash-wrapped script) for output that is a pure function of the prefix,
+#     so its exports are written out here instead. Only `mise activate` is
+#     run, and it is a ~10 ms native binary.
+#   - Idempotent: a guard makes a login+interactive shell (which also runs
+#     path.zsh + dev-tools.zsh) skip the second pass.
 
 if [ -z "${ZSHCONF_LOGIN_PATH_SOURCED:-}" ]; then
   ZSHCONF_LOGIN_PATH_SOURCED=1
 
   # Homebrew. Candidates in path.zsh order; linuxbrew last and only probed
   # when the others are missing (a literal /home lookup costs ~50 ms on macOS
-  # via autofs).
-  for _zshconf_brew in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew; do
-    if [ -x "$_zshconf_brew" ]; then
-      eval "$("$_zshconf_brew" shellenv)"
+  # via autofs). The exports mirror `brew shellenv` for sh/bash/zsh — if
+  # Homebrew changes that output, update this block (verified by a test).
+  for _zshconf_brew in /opt/homebrew /usr/local /home/linuxbrew/.linuxbrew; do
+    if [ -x "$_zshconf_brew/bin/brew" ]; then
+      export HOMEBREW_PREFIX="$_zshconf_brew"
+      export HOMEBREW_CELLAR="$_zshconf_brew/Cellar"
+      if [ -d "$_zshconf_brew/Homebrew" ]; then
+        export HOMEBREW_REPOSITORY="$_zshconf_brew/Homebrew"   # Intel macOS, Linux
+      else
+        export HOMEBREW_REPOSITORY="$_zshconf_brew"            # Apple silicon
+      fi
+      export PATH="$_zshconf_brew/bin:$_zshconf_brew/sbin${PATH+:$PATH}"
+      export INFOPATH="$_zshconf_brew/share/info:${INFOPATH:-}"
+      # A trailing/leading ':' keeps the system man dirs: brew shellenv does
+      # the same normalisation.
+      [ -z "${MANPATH-}" ] || { MANPATH="${MANPATH%"${MANPATH##*[!:]}"}"; export MANPATH=":${MANPATH#"${MANPATH%%[!:]*}"}"; }
       break
     fi
   done
@@ -41,7 +58,10 @@ if [ -z "${ZSHCONF_LOGIN_PATH_SOURCED:-}" ]; then
   # here. `activate bash --shims` emits a plain `export PATH=…`, valid in sh
   # and zsh too. An interactive zsh later runs the full `mise activate zsh`
   # (dev-tools.zsh), which puts the real tool dirs ahead of the shims.
-  for _zshconf_mise in "$(command -v mise 2>/dev/null)" "$HOME/.local/bin/mise"; do
+  # ~/.local/bin/mise first: the install script (mise.run) puts it there and
+  # mise's docs recommend that over package managers; a leftover package
+  # copy on PATH must not shadow it.
+  for _zshconf_mise in "$HOME/.local/bin/mise" "$(command -v mise 2>/dev/null)"; do
     if [ -n "$_zshconf_mise" ] && [ -x "$_zshconf_mise" ]; then
       eval "$("$_zshconf_mise" activate bash --shims)"
       break

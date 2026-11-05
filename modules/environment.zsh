@@ -1,5 +1,17 @@
-# ── Locale
-export LANG="en_US.UTF-8"
+# ── Locale: a UTF-8 default, not an override. A LANG the system or the user
+# already set (macOS Language & Region, /etc/locale.conf, a de_DE login) is
+# respected; only an empty/unset one gets en_US.UTF-8. A non-UTF-8 LANG
+# (e.g. a bare "C" from a minimal container) is upgraded to C.UTF-8 where
+# it exists, else en_US.UTF-8 — the prompt and plugins print UTF-8.
+if [[ -z "${LANG:-}" ]]; then
+  export LANG="en_US.UTF-8"
+elif [[ "$LANG" != *[Uu][Tt][Ff]-8* && "$LANG" != *[Uu][Tt][Ff]8* ]]; then
+  if [[ -d /usr/share/locale/C.UTF-8 || -d /usr/share/locale/C.utf8 || "$OSTYPE" == darwin* ]]; then
+    export LANG="C.UTF-8"
+  else
+    export LANG="en_US.UTF-8"
+  fi
+fi
 export LC_CTYPE="$LANG"
 export TIME_STYLE="long-iso"
 

@@ -95,24 +95,44 @@ t_eq "bash: no .profile invented"   "$([[ -e $fake/.profile ]]; echo $?)" "1"
 # 11. login-path.sh puts mise shims and Homebrew ahead of an inherited
 #     path_helper-style PATH, as `bash -lc` / `zsh -lc` under /etc/profile
 #     would see it — in all three shells it can be sourced from. Fake
-#     brew/mise: a copy of the file with its first brew candidate repointed,
-#     the way another prefix would differ; mise found via ~/.local/bin.
+#     prefix/mise: a copy of the file with its first brew prefix repointed
+#     at a fake one (brew is never executed — only probed for), the way
+#     another prefix would differ; mise found via ~/.local/bin.
 mkdir -p "$fake/fakebrew/bin" "$fake/.local/bin"
 print -r -- '#!/bin/sh
-echo "export PATH=\"'"$fake"'/fakebrew/bin:\$PATH\""' >| "$fake/fakebrew/bin/brew"
+echo "fake brew must not be executed" >&2; exit 99' >| "$fake/fakebrew/bin/brew"
 print -r -- '#!/bin/sh
 echo "export PATH=\"'"$fake"'/.local/share/mise/shims:\$PATH\""' >| "$fake/.local/bin/mise"
 chmod +x "$fake/fakebrew/bin/brew" "$fake/.local/bin/mise"
-sed "s|/opt/homebrew/bin/brew|$fake/fakebrew/bin/brew|" "$REPO/login-path.sh" >| "$TWORK/login-path.sh"
+sed "s|/opt/homebrew |$fake/fakebrew |" "$REPO/login-path.sh" >| "$TWORK/login-path.sh"
 for sh_ in "bash --noprofile --norc" "zsh -f" "sh"; do
-  out="$(env -i HOME="$fake" PATH="/usr/bin:/bin" ${=sh_} -c ". '$TWORK/login-path.sh'; printf '%s' \"\$PATH\"")"
+  out="$(env -i HOME="$fake" PATH="/usr/bin:/bin" ${=sh_} -c ". '$TWORK/login-path.sh' 2>&1; printf '%s' \"\$PATH\"")"
   t_match "${sh_%% *}: mise shims first"      "$out" "$fake/.local/share/mise/shims:*"
-  t_match "${sh_%% *}: brew before /usr/bin"  "$out" "*$fake/fakebrew/bin:*/usr/bin*"
+  t_match "${sh_%% *}: brew before /usr/bin"  "$out" "*$fake/fakebrew/bin:$fake/fakebrew/sbin:*/usr/bin*"
+  t_nomatch "${sh_%% *}: brew not executed"   "$out" "*must not be executed*"
   t_nomatch "${sh_%% *}: no leaked temp vars" "$(env -i HOME="$fake" PATH="/usr/bin:/bin" ${=sh_} -c ". '$TWORK/login-path.sh'; set | grep -v EXECUTION_STRING")" "*_zshconf_[bm]*"
 done
 # Guard: sourcing twice does not prepend twice.
 out="$(env -i HOME="$fake" PATH="/usr/bin:/bin" sh -c ". '$TWORK/login-path.sh'; . '$TWORK/login-path.sh'; printf '%s' \"\$PATH\"")"
 t_eq "guard: shims once" "$(print -r -- "$out" | tr ':' '\n' | grep -c mise/shims)" "1"
+# The hand-written Homebrew exports must equal what `brew shellenv` emits
+# for the same prefix — checked against a real brew when one is present.
+# Also catches a future change in Homebrew's output.
+if [[ -x /opt/homebrew/bin/brew || -x /usr/local/bin/brew || -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  cmp_env() { env | grep -E '^(HOMEBREW_(PREFIX|CELLAR|REPOSITORY)|INFOPATH|MANPATH)=' | sort }
+  ours="$(env -i HOME="$fake" PATH=/usr/bin:/bin MANPATH=/x/man sh -c ". '$REPO/login-path.sh'; $(typeset -f cmp_env); cmp_env")"
+  theirs="$(env -i HOME="$fake" PATH=/usr/bin:/bin MANPATH=/x/man sh -c 'for b in /opt/homebrew /usr/local /home/linuxbrew/.linuxbrew; do [ -x "$b/bin/brew" ] && { eval "$("$b/bin/brew" shellenv)"; break; }; done; '"$(typeset -f cmp_env)"'; cmp_env')"
+  t_eq "brew parity: exports equal brew shellenv" "$ours" "$theirs"
+  t_eq "brew parity: not empty"                   "$([[ -n "$theirs" ]]; echo $?)" "0"
+fi
+# mise lookup: ~/.local/bin/mise (mise.run install) wins over one on PATH.
+mkdir -p "$fake/pkgbin"
+print -r -- '#!/bin/sh
+echo "export PATH=\"/WRONG-mise:\$PATH\""' >| "$fake/pkgbin/mise"
+chmod +x "$fake/pkgbin/mise"
+out="$(env -i HOME="$fake" PATH="$fake/pkgbin:/usr/bin:/bin" sh -c ". '$TWORK/login-path.sh'; printf '%s' \"\$PATH\"")"
+t_match   "mise: ~/.local/bin copy preferred" "$out" "$fake/.local/share/mise/shims:*"
+t_nomatch "mise: PATH copy not used"          "$out" "*WRONG-mise*"
 
 # 12. A stub pointing at a moved repo is refreshed (same version, wrong path).
 sed -i.bak "s|$REPO/login-path.sh|/old/gone/login-path.sh|g" "$fake/.bash_profile" && rm -f "$fake/.bash_profile.bak"
