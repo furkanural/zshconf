@@ -4,6 +4,7 @@ Notable, user-visible changes only. `main` is rolling; update with `zshconf-upda
 
 ## Unreleased
 
+- **Login bash gets the same PATH as zsh:** `install.sh` now appends a marked block to `~/.bash_profile` (or `~/.profile`) that re-runs `brew shellenv` and `mise activate bash --shims`. Fixes hooks and agent tools (Orca, Claude Code, Codex — anything using `bash -lc`) picking up macOS system Ruby 2.6 instead of mise's, because `/etc/profile`'s `path_helper` reorders the inherited PATH. Re-run `./install.sh` to get it.
 - Fix: `zsh-syntax-highlighting: unhandled ZLE widget 'autosuggest-accept'` printed on every start since the Tier 2 reorder — `Ctrl+Space` was bound before the widget existed; it is now bound alongside `Ctrl+\` once autosuggestions load. The tier test asserts a clean stderr from plugins.
 - **Faster startup on macOS (~190 → ~135 ms):** Linuxbrew candidate paths no longer trigger the `/home` autofs automounter (~50 ms per shell).
 - **Faster prompts (~20 ms less per prompt):** zsh-autosuggestions no longer re-wraps every widget on each prompt (`ZSH_AUTOSUGGEST_MANUAL_REBIND`, bound once after each relevant tier). Suggestion lookups stop once the line exceeds 200 chars (pasted text).

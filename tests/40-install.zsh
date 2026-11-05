@@ -70,4 +70,37 @@ t_eq "stale: body replaced"     "$(has $fake/.zprofile 'stale-body')" "0"
 t_eq "stale: current version"   "$(has $fake/.zprofile 'zshconf env (managed by install.sh), v1')" "1"
 t_eq "stale: brew line kept"    "$(has $fake/.zprofile 'brew shellenv')" "1"
 t_eq "stale: tail content kept" "$(has $fake/.zprofile 'TAIL_KEEP=1')" "1"
+
+# 10. Fresh install writes the login-bash block to ~/.bash_profile (it was
+#     created by run 1; the file is where macOS login bash looks first).
+t_eq "bash: block in .bash_profile" "$(has $fake/.bash_profile 'zshconf bash-login (managed by install.sh), v1')" "1"
+t_eq "bash: block parses as bash"   "$(bash -n $fake/.bash_profile 2>&1; echo $?)" "0"
+t_eq "bash: block parses as sh"     "$(sh -n $fake/.bash_profile 2>&1; echo $?)" "0"
+
+# 11. The block puts mise shims and Homebrew ahead of an inherited
+#     path_helper-style PATH, as `bash -lc` under /etc/profile would see it.
+#     Fake brew/mise binaries: no dependence on what the host has installed.
+mkdir -p "$fake/fakebrew/bin" "$fake/.local/bin"
+print -r -- '#!/bin/sh
+echo "export PATH=\"'"$fake"'/fakebrew/bin:\$PATH\""' >| "$fake/fakebrew/bin/brew"
+print -r -- '#!/bin/sh
+echo "export PATH=\"'"$fake"'/.local/share/mise/shims:\$PATH\""' >| "$fake/.local/bin/mise"
+chmod +x "$fake/fakebrew/bin/brew" "$fake/.local/bin/mise"
+# Point the block's first brew candidate at the fake: sed the written file
+# the way a user on another prefix would differ, without touching installer.
+sed -i.bak "s|/opt/homebrew/bin/brew|$fake/fakebrew/bin/brew|" "$fake/.bash_profile" && rm -f "$fake/.bash_profile.bak"
+out="$(env -i HOME="$fake" PATH="/usr/bin:/bin" bash --noprofile --norc -c "source '$fake/.bash_profile'; printf '%s' \"\$PATH\"")"
+t_match "bash: mise shims first"      "$out" "$fake/.local/share/mise/shims:*"
+t_match "bash: brew before /usr/bin"  "$out" "*$fake/fakebrew/bin:*/usr/bin*"
+t_nomatch "bash: no leaked temp vars" "$(env -i HOME="$fake" PATH="/usr/bin:/bin" bash --noprofile --norc -c "source '$fake/.bash_profile'; set" )" "*_zshconf_*"
+
+# 12. An existing ~/.profile and no ~/.bash_profile: the block goes to
+#     ~/.profile (what login bash would read) instead of shadowing it.
+fake2="$TWORK/home2"
+mkdir -p "$fake2"
+print -r -- 'export KEEP_PROFILE=1' >| "$fake2/.profile"
+HOME="$fake2" XDG_CONFIG_HOME= zsh "$REPO/install.sh" >"$TWORK/install2.log" 2>&1
+t_eq "profile: no .bash_profile created" "$([[ -e $fake2/.bash_profile ]]; echo $?)" "1"
+t_eq "profile: block appended"           "$(has $fake2/.profile 'zshconf bash-login (managed by install.sh), v1')" "1"
+t_eq "profile: user line kept"           "$(has $fake2/.profile 'KEEP_PROFILE=1')" "1"
 t_done
