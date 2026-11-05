@@ -2,4 +2,3 @@
 .zcompdump*
 *.env
 secrets.*
-.claude/settings.local.json
