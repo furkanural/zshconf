@@ -18,10 +18,10 @@ source "$ZSHCONF/modules/helpers.zsh"
 source "$ZSHCONF/modules/options.zsh"
 source "$ZSHCONF/modules/path.zsh"              # before any $+commands guard
 source "$ZSHCONF/modules/environment.zsh"       # LS_COLORS before completion-styles
-source "$ZSHCONF/modules/dev-tools.zsh"         # mise before starship
-source "$ZSHCONF/modules/prompt.zsh"
 source "$ZSHCONF/modules/completion-early.zsh"  # complist + dump hygiene before zicompinit
 source "$ZSHCONF/modules/plugins.zsh"           # all zinit idioms live here
+source "$ZSHCONF/modules/dev-tools.zsh"         # mise after Zinit's PATH edits, before starship
+source "$ZSHCONF/modules/prompt.zsh"
 source "$ZSHCONF/modules/keybindings.zsh"
 source "$ZSHCONF/modules/completion-styles.zsh" # after plugins, before first Tab
 

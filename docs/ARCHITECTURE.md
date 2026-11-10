@@ -21,7 +21,7 @@ A sourced core plus an overlay for everything personal. Updates are always a fas
 `init.zsh` is an explicit manifest; each constraint is commented where it is enforced:
 
 1. `path` before any `$+commands[...]` guard.
-2. `mise` before Starship.
+2. Zinit before `mise` activation (Zinit prepends its `polaris/bin` and `polaris/sbin` directories to PATH), then Starship.
 3. `LS_COLORS` before `completion-styles.zsh` — the `list-colors` zstyle expands it at definition time. This is why `pre.zsh` exists.
 4. Compdump hygiene and `zmodload zsh/complist` before Tier 1's compinit.
 5. `local.d` last.
